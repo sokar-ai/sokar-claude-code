@@ -3,23 +3,15 @@
 The [Sokar](https://github.com/fuinorg/sokar) adapter for
 [Claude Code](https://github.com/anthropics/claude-code).
 
-Built here, released here, installed as its own package. It compiles against the
-published agent contract — `org.fuin.sokar:sokar-agent-api` and
-`org.fuin.sokar:sokar-wire` — and needs no checkout of the Sokar repository.
-
-```
-./mvnw -s settings.xml verify                     # unit tests
-./mvnw -s settings.xml -Pnative,dist verify       # + the binary, the .deb and the .rpm
-```
-
-The native build needs GraalVM as `JAVA_HOME`.
+Install the package and Sokar finds it; nothing has to be registered. See
+[build](build.md) if you want to build it yourself.
 
 Two different things get called "the agent", and the difference matters when
 something goes wrong:
 
 |                      | Where it lives                                                | What it is                         |
 |----------------------|---------------------------------------------------------------|------------------------------------|
-| `sokar-agent-claude` | on the **host**, in `/usr/libexec/sokar/agents`               | this adapter, about 6 MB, one file |
+| `sokar-agent-claude` | on the **host**, in `/usr/libexec/sokar/agents`               | this adapter, 15 MB, one file      |
 | `claude`             | inside the **task image**, at `/home/agent/.local/bin/claude` | the CLI itself, about 320 MB       |
 
 The package does not contain the CLI. It carries a pinned URL and a SHA-256, and
@@ -154,28 +146,6 @@ log intake during a normal run, and Sokar does not give it one. The CLI works
 without it. It is declared rather than merely absent so that a test can tell a
 policy from a mistake, and so you can see what is being blocked.
 
-## Bumping the CLI version
-
-`src/main/resources/agent/claude.yaml` pins one version and one digest:
-
-```yaml
-install:
-  version: "${agent.cli.version}"
-  artifacts:
-    - url: https://downloads.claude.ai/claude-code-releases/${agent.cli.version}/linux-x64/claude
-      sha256: "6c8818fa…"
-```
-
-Anthropic publishes a per-version `manifest.json` carrying a SHA-256 per
-platform, at
-`https://downloads.claude.ai/claude-code-releases/<version>/manifest.json`, so
-this is verifiable rather than trusted. Bumping is a two-line change: the `agent.cli.version`
-property in `pom.xml` and the digest here. Until it is bumped, every image build
-installs the same bytes.
-
-`sokar agents --supply-chain` reports what is pinned, so "which version ran" is
-answerable from the installed adapter rather than from a build log.
-
 ## When it will not authenticate
 
 Check what actually reached the proxy — `vault.log` in the task's state
@@ -199,3 +169,7 @@ A credential-free check of the whole path, needing no account, lives in the Soka
 repository as `buildtools/e2e-tier1.sh`; with a real credential
 `buildtools/e2e-tier2.sh` additionally confirms the credential never appears inside
 the container or in any of Sokar's logs.
+
+## Licence
+
+GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
