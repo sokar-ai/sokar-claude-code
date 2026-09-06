@@ -147,9 +147,15 @@ if [ -z "$CONTAINER" ]; then
 fi
 pass "the task started (container $CONTAINER)"
 
-# The cheapest model that can follow an instruction. What is measured is that the credential
-# was swapped in and accepted, not what the model can do.
-MODEL="${SOKAR_E2E_MODEL:-anthropic/claude-3.5-haiku}"
+# What is measured is that the credential was swapped in and accepted, not what the model can
+# do, so this is the cheapest one that will follow an instruction - about $0.00002 a run.
+#
+# Not a ':free' variant: 'z-ai/glm-5.2:free' returned rate_limit_exceeded on three consecutive
+# attempts, and a gate that fails on somebody else's quota is not a gate.
+#
+# Not an Anthropic model either, despite this being the anthropic-messages dialect - OpenRouter
+# routes any model through it, and 'anthropic/claude-3.5-haiku' does not exist there at all.
+MODEL="${SOKAR_E2E_MODEL:-z-ai/glm-5.3-flash}"
 ANSWER="$(podman exec "$CONTAINER" sh -c \
     "timeout 240 ~/.local/bin/claude --model '$MODEL' -p 'Reply with exactly the word SOKARLIVE and nothing else.' 2>&1" \
     2>/dev/null)"
