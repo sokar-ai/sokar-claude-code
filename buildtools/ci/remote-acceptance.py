@@ -109,8 +109,11 @@ def main() -> int:
         print("\n-- acceptance --")
         # The credential travels as an environment variable on the remote shell, never on a
         # command line: argv is readable by every process on that machine.
-        secret = os.environ.get("SOKAR_E2E_OPENROUTER_API_KEY", "")
-        exported = f"SOKAR_E2E_OPENROUTER_API_KEY={shell_quote(secret)} " if secret else ""
+        exported = ""
+        for name in ("SOKAR_E2E_OPENROUTER_API_KEY", "SOKAR_E2E_MODEL"):
+            value = os.environ.get(name, "")
+            if value:
+                exported += f"{name}={shell_quote(value)} "
         run(address, environment,
             f"cd /home/{USER} && XDG_RUNTIME_DIR=/run/user/$(id -u) {exported}./acceptance.sh")
 
