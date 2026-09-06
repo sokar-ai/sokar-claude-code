@@ -150,11 +150,14 @@ jobs:
           SSH: ${{ secrets.SSH }}
           SOKAR_CI_LEG: acc-${{ matrix.os }}
           SOKAR_E2E_OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
-          # Optional repository variable. Each agent picks its own: what is measured is that
-          # the credential was accepted, so the model only has to be cheap and able to follow
-          # one instruction - and which model that is differs per agent and over time. Unset
-          # falls back to the default in the suite.
-          SOKAR_E2E_MODEL: ${{ vars.SOKAR_E2E_MODEL }}
+          # This agent's model, set here rather than in a repository setting so it is visible,
+          # reviewable and changes with a commit. What is measured is that the credential was
+          # accepted, so it only has to be cheap and able to follow one instruction.
+          #
+          # Chosen by measurement: a ':free' variant returns rate_limit_exceeded, and
+          # 'anthropic/claude-3.5-haiku' does not exist on OpenRouter at all - which is fine,
+          # because OpenRouter routes any model through the anthropic-messages dialect.
+          SOKAR_E2E_MODEL: z-ai/glm-5.3-flash
         run: python3 buildtools/ci/remote-acceptance.py --os ${{ matrix.os }}
 
       - name: Delete what this run created

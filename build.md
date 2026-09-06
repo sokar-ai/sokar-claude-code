@@ -99,12 +99,13 @@ Two halves:
   and the script still exits 0, so a fork or a revoked key loses coverage rather than
   turning the build red with no information.
 
-**The model is configurable per repository.** Set the variable `SOKAR_E2E_MODEL` to override
-the suite's default. What is measured is that the credential was accepted, so the model only
-has to be cheap and able to follow one instruction - which model that is differs per agent and
-changes over time.
+**The model is set in the workflow**, `SOKAR_E2E_MODEL` in `.github/workflows/build.yml`,
+rather than in a repository setting - so it is visible in the diff, reviewable, and changes
+with a commit rather than silently. Each agent picks its own: what is measured is that the
+credential was accepted, so the model only has to be cheap and able to follow one instruction.
+The same variable overrides a local run.
 
-The default is `z-ai/glm-5.3-flash`, about $0.00002 a run, chosen by measurement:
+It is `z-ai/glm-5.3-flash`, about $0.00002 a run, chosen by measurement:
 a `:free` variant returned `rate_limit_exceeded` on three consecutive attempts, and
 `anthropic/claude-3.5-haiku` does not exist on OpenRouter at all despite this being the
 anthropic-messages dialect - OpenRouter routes any model through it. Watch out for reasoning
