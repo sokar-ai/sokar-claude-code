@@ -48,11 +48,14 @@
 
         <fuin-bom.version>1.0.2</fuin-bom.version>
         <build-helper.version>3.6.1</build-helper.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
+        <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
         <jdeb.version>1.14</jdeb.version>
         <rpm.version>1.13.0</rpm.version>
         <native-maven-plugin.version>1.1.11</native-maven-plugin.version>
 
         <agent.install.dir>/usr/libexec/sokar/agents</agent.install.dir>
+        <sbom.install.dir>/usr/share/sokar/sbom</sbom.install.dir>
         <!-- On for local and CI builds, off for releases, where the key exists. -->
         <rpm.sign.skip>true</rpm.sign.skip>
 
@@ -118,6 +121,38 @@
 
     <build>
 
+        <plugins>
+
+            <!-- The bill of what this package carries. skipNotDeployed is off because nothing
+                 here is deployed to Maven - the package is what ships. -->
+
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>cyclonedx</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                        <configuration>
+                            <projectType>application</projectType>
+                            <schemaVersion>1.6</schemaVersion>
+                            <outputFormat>json</outputFormat>
+                            <outputName>${project.artifactId}.cdx</outputName>
+                            <skipNotDeployed>false</skipNotDeployed>
+                            <skipAttach>true</skipAttach>
+                            <includeTestScope>false</includeTestScope>
+                            <includeProvidedScope>false</includeProvidedScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -176,6 +211,36 @@
             <build>
                 <plugins>
 
+                    <!-- The pinned CLI is not in this package; the image build fetches it.
+                         Added after the bill is generated, from the filtered definition, so the
+                         version and digest recorded are the ones an image will actually use. -->
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>record-the-fetched-cli</id>
+                                <!-- 'package', not 'prepare-package': the bill does not exist
+                                     until cyclonedx has run, and that runs at package. A
+                                     profile's plugins run after the main build's in the same
+                                     phase, which is what puts this second. -->
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.basedir}/buildtools/add-fetched-cli.py</executable>
+                                    <arguments>
+                                        <argument>${project.build.directory}/${project.artifactId}.cdx.json</argument>
+                                        <argument>${project.build.outputDirectory}/agent/claude.yaml</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
@@ -225,6 +290,17 @@
                                                 <type>perm</type>
                                                 <prefix>${agent.install.dir}</prefix>
                                                 <filemode>755</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.directory}/${project.artifactId}.cdx.json</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${sbom.install.dir}</prefix>
+                                                <filemode>644</filemode>
                                                 <user>root</user>
                                                 <group>root</group>
                                             </mapper>
@@ -285,6 +361,13 @@
                                     <name>${agent.install.dir}/${project.artifactId}</name>
                                     <file>${project.build.directory}/${project.artifactId}</file>
                                     <mode>0755</mode>
+                                    <user>root</user>
+                                    <group>root</group>
+                                </entry>
+                                <entry>
+                                    <name>${sbom.install.dir}/${project.artifactId}.cdx.json</name>
+                                    <file>${project.build.directory}/${project.artifactId}.cdx.json</file>
+                                    <mode>0644</mode>
                                     <user>root</user>
                                     <group>root</group>
                                 </entry>
