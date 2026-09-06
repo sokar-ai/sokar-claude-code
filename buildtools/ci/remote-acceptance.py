@@ -27,6 +27,12 @@ import hetzner  # noqa: E402
 
 USER = "acceptance"
 
+# The package this repository publishes. Stated once rather than spelled out in each install
+# script: copied to another agent's repository, the literal name silently installs the wrong
+# agent, and that shows up as "sokar does not list the <x> agent" rather than as anything
+# about installation. It happened.
+PACKAGE = "sokar-agent-claude"
+
 # Stock images, and the versions matter: the deb must install on the oldest release Sokar
 # supports, and the rpm on a current Fedora with SELinux enforcing.
 IMAGES = {"ubuntu": "ubuntu-24.04", "fedora": "fedora-44"}
@@ -41,7 +47,7 @@ curl -fsSL {key} | gpg --dearmor > /usr/share/keyrings/sokar.gpg
 echo "deb [signed-by=/usr/share/keyrings/sokar.gpg] {base}/sokar-dist-deb snapshots main" \
     > /etc/apt/sources.list.d/sokar.list
 apt-get update
-apt-get install -y -qq sokar sokar-agent-claude
+apt-get install -y -qq sokar {package}
 """,
     "fedora": """
 set -eux
@@ -53,7 +59,7 @@ enabled=1
 gpgcheck=0
 EOF
 dnf install -y -q podman
-dnf install -y -q sokar sokar-agent-claude
+dnf install -y -q sokar {package}
 """,
 }
 
@@ -89,7 +95,8 @@ def main() -> int:
         print(f"\n-- installing from {args.artifactory}, as an operator would --")
         key_url = f"{args.artifactory}/api/security/keypair/sokar-packages/public"
         hetzner.ssh(address, environment,
-                    INSTALL[args.operating_system].format(base=args.artifactory, key=key_url))
+                    INSTALL[args.operating_system].format(base=args.artifactory, key=key_url,
+                                                         package=PACKAGE))
 
         # An unprivileged user, because that is the shape a task runs in: rootless podman,
         # the operator's own directories. Running the suite as root would prove less.
