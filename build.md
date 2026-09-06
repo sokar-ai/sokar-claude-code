@@ -53,6 +53,25 @@ installs the same bytes.
 `sokar agents --supply-chain` reports what is pinned, so "which version ran" is
 answerable from the installed adapter rather than from a build log.
 
+## Publishing
+
+A push to `main` uploads the two packages to Artifactory, into the **same repositories
+Sokar itself publishes to** - `sokar-dist-deb` and `sokar-dist-rpm`. They belong
+together: this package declares `Depends: sokar`, so split across repositories an
+operator would have to configure both for the dependency to resolve.
+
+A pull request builds and packages but publishes nothing.
+
+Two repository settings are needed, the same ones Sokar uses: the variable `JF_URL`
+(the platform url, **without** `/artifactory`) and the secret `JF_ACCESS_TOKEN`. The
+token needs Read, Deploy/Cache, **Annotate** and **Delete** on both repositories -
+Annotate because the Debian index is driven by properties, Delete because the snapshot
+file name is stable and every build overwrites it.
+
+`.github/workflows/artifactory-smoke.yml` checks all of that in about twenty seconds,
+without building anything. Run it after rotating the token, or before wondering why a
+publish failed.
+
 ## What this repository cannot check
 
 The acceptance suite needs podman, nftables and a `sokar` binary, so it lives in the

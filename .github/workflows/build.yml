@@ -50,3 +50,59 @@ jobs:
             target/*.deb
             target/*.rpm
           if-no-files-found: error
+
+      # Publishing only from main. A pull request builds and packages, which is what says the
+      # change is sound; it must not put an artifact where an operator could install it.
+      #
+      # In this job rather than a separate one: the native build here takes about twenty
+      # seconds, so a second job would cost more in setup than it saves.
+      - uses: jfrog/setup-jfrog-cli@v5
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+      # The same two repositories Sokar itself publishes to. They belong together: this
+      # package declares 'Depends: sokar', so split across repositories an operator would need
+      # both configured for the dependency to resolve.
+      #
+      # The three deb.* properties are what get the package indexed. Without them Artifactory
+      # stores the file and apt never sees it, with no error anywhere.
+      - name: Publish the packages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        run: |
+          set -eux
+          jf rt upload "target/*.deb" "sokar-dist-deb/pool/main/s/sokar-agent-claude/" \
+              --target-props="deb.distribution=snapshots;deb.component=main;deb.architecture=amd64" \
+              --build-name=sokar-agent-claude --build-number="$GITHUB_RUN_ID"
+          jf rt upload "target/*.rpm" "sokar-dist-rpm/snapshots/" \
+              --build-name=sokar-agent-claude --build-number="$GITHUB_RUN_ID"
+          jf rt build-add-git sokar-agent-claude "$GITHUB_RUN_ID"
+          jf rt build-publish sokar-agent-claude "$GITHUB_RUN_ID"
+
+      # Uploaded is not installable. Indexing is asynchronous, and a package with missing or
+      # wrong properties is stored happily and never listed - invisible until an operator's
+      # apt reports nothing to install.
+      - name: The package is indexed, not merely stored
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        run: |
+          set -eu
+          tries=0
+          while [ "$tries" -lt 20 ]; do
+              if jf rt curl -s -XGET \
+                  "/sokar-dist-deb/dists/snapshots/main/binary-amd64/Packages" 2>/dev/null \
+                  | grep -q "Package: sokar-agent-claude"; then
+                  echo "  OK    the Debian index lists sokar-agent-claude"
+                  exit 0
+              fi
+              tries=$((tries + 1))
+              sleep 6
+          done
+          echo "::error::sokar-agent-claude never appeared in the index - uploaded but not indexed"
+          exit 1
