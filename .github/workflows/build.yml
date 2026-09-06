@@ -1,0 +1,52 @@
+# Builds against the PUBLISHED agent contract. Nothing here checks out the sokar repository,
+# and that is the property worth protecting: if this build ever needs one, the split has been
+# undone without anyone deciding to undo it.
+#
+# The acceptance suite is not here. It needs podman, nftables and a sokar binary, so it belongs
+# to the sokar repository; what this repository can prove on its own is that the adapter
+# compiles against the contract, that its unit tests pass, and that it packages.
+name: Build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  build:
+    name: Build and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          cache: 'maven'
+
+      # -s settings.xml declares the snapshot repository the agent contract is resolved from,
+      # and keeps a developer's own ~/.m2/settings.xml out of what makes a build work.
+      - name: Build and unit tests
+        run: ./mvnw -B -s settings.xml verify
+
+      # The packages are what an operator installs, so a build that has not produced them has
+      # not proved much. Native-image needs the GraalVM set up above.
+      - name: Native binary and packages
+        run: ./mvnw -B -s settings.xml -Pnative,dist verify -DskipTests
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            target/*.deb
+            target/*.rpm
+          if-no-files-found: error
