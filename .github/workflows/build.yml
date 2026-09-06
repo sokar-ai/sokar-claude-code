@@ -47,7 +47,7 @@ jobs:
       - name: Native binary and packages
         run: ./mvnw -B -s settings.xml -Pnative,dist verify -DskipTests
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: packages
           path: |
