@@ -31,9 +31,9 @@ session:
   resume_flag: "--resume"
 
 provider:
-  # Anthropic's half - upstream, headers, prefixes, the variable a credential goes in - is
-  # declared once in providers/anthropic.yaml and not repeated here. What is left is only what
-  # belongs to this agent.
+  # Anthropic's half - upstream, headers, prefixes - is declared once in
+  # providers/anthropic.yaml and not repeated here. What is left is only what belongs to this
+  # agent.
   default: anthropic
 
   # One wire format wherever it points, unlike a provider-agnostic agent that speaks whichever
@@ -51,6 +51,15 @@ provider:
   # URL, Claude Code falls back to its compiled-in endpoint - measured, it then resolved
   # api.anthropic.com 184 times in one run and never touched the socket.
   base_url_env: ANTHROPIC_BASE_URL
+
+  # The variable the credential is read from is a fact about THIS CLI, not about whoever serves
+  # it: Claude Code reads ANTHROPIC_API_KEY whether the provider is Anthropic or OpenRouter.
+  # Sokar falls back to the provider's own variable when an agent names none, which is right for
+  # a provider-agnostic agent and wrong here - pointed at OpenRouter, this agent was handed
+  # OPENROUTER_API_KEY and reported 'Not logged in'. Found by the acceptance suite.
+  token_env:
+    _default: ANTHROPIC_API_KEY
+    oauth: CLAUDE_CODE_OAUTH_TOKEN
 
 # api.anthropic.com is not listed: the provider declares its own host, and it is withheld from
 # the firewall while the proxy is in use so that an agent ignoring the redirect shows up as a

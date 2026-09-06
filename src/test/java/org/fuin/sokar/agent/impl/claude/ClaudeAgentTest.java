@@ -45,25 +45,18 @@ class ClaudeAgentTest {
     }
 
     @Test
-    void takesItsCredentialVariablesFromTheProviderRatherThanRestatingThem() {
+    void namesTheVariablesClaudeCodeItselfReads() {
 
+        // Which variable a credential is read from is a fact about THIS CLI, not about whoever
+        // serves it. Sokar falls back to the provider's variable when an agent names none -
+        // right for a provider-agnostic agent, wrong here: pointed at OpenRouter this agent was
+        // handed OPENROUTER_API_KEY and reported 'Not logged in'. An earlier version of this
+        // test asserted the opposite, and the acceptance suite is what disproved it.
+        //
         // Sending an OAuth token as an API key fails in a way that looks like a bad key, so the
-        // two variables have to differ - but which they are is Anthropic's fact, not this
-        // agent's, and every agent reaching Anthropic would otherwise repeat it.
-        assertThat(agent.definition().tokenVariable("oauth")).isNull();
-        assertThat(agent.definition().tokenVariable("api-key")).isNull();
-
-        final ProviderDefinition anthropic = new ProviderDefinition("anthropic", "Anthropic",
-                "https://api.anthropic.com", java.util.Map.of("anthropic-messages", ""),
-                java.util.Map.of("oauth", "Authorization", "_default", "x-api-key"),
-                java.util.Map.of("oauth", "Bearer ", "_default", ""), java.util.Map.of(),
-                java.util.Map.of("oauth", "CLAUDE_CODE_OAUTH_TOKEN",
-                        "_default", "ANTHROPIC_API_KEY"));
-
-        assertThat(agent.definition().tokenVariable("oauth", anthropic))
-                .isEqualTo("CLAUDE_CODE_OAUTH_TOKEN");
-        assertThat(agent.definition().tokenVariable("api-key", anthropic))
-                .isEqualTo("ANTHROPIC_API_KEY");
+        // two still have to differ.
+        assertThat(agent.definition().tokenVariable("oauth")).isEqualTo("CLAUDE_CODE_OAUTH_TOKEN");
+        assertThat(agent.definition().tokenVariable("api-key")).isEqualTo("ANTHROPIC_API_KEY");
     }
 
     @Test
@@ -204,5 +197,25 @@ class ClaudeAgentTest {
             }
         }
         return -1;
+    }
+
+    @Test
+    void keepsThoseVariablesWhateverProviderServesIt() {
+
+        // The point of the pair: OpenRouter declares OPENROUTER_API_KEY, and this agent must
+        // still be handed ANTHROPIC_API_KEY, because that is what it reads.
+        final org.fuin.sokar.agent.api.ProviderDefinition openrouter =
+                new org.fuin.sokar.agent.api.ProviderDefinition(
+                        "openrouter", "OpenRouter", "https://openrouter.ai",
+                        java.util.Map.of("anthropic-messages", "/api"),
+                        java.util.Map.of("_default", "Authorization"),
+                        java.util.Map.of("_default", "Bearer "),
+                        java.util.Map.of(),
+                        java.util.Map.of("_default", "OPENROUTER_API_KEY"));
+
+        assertThat(agent.definition().tokenVariable("api-key", openrouter))
+                .isEqualTo("ANTHROPIC_API_KEY");
+        assertThat(agent.definition().tokenVariable("oauth", openrouter))
+                .isEqualTo("CLAUDE_CODE_OAUTH_TOKEN");
     }
 }

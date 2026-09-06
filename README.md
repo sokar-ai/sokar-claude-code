@@ -117,7 +117,10 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:9419
 ```
 
 For a subscription the variable is `CLAUDE_CODE_OAUTH_TOKEN` instead; the kind
-stored in the vault decides which.
+stored in the vault decides which. **Both are named by this agent, not by the
+provider** — Claude Code reads `ANTHROPIC_API_KEY` whoever is behind the socket, so
+pointing it at OpenRouter must not hand it `OPENROUTER_API_KEY`. It did once, and
+reported `Not logged in`.
 
 Claude Code talks to the socket; Sokar's proxy checks the phantom token, replaces
 it with your real credential, and reissues the request to
