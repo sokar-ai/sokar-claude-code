@@ -72,10 +72,46 @@ file name is stable and every build overwrites it.
 without building anything. Run it after rotating the token, or before wondering why a
 publish failed.
 
-## What this repository cannot check
+## Acceptance
 
-The acceptance suite needs podman, nftables and a `sokar` binary, so it lives in the
-Sokar repository. What is provable here is that the adapter compiles against the
-contract, that its unit tests pass, and that it packages. Whether a real CLI honours
-the socket and stays inside its declared domains is checked by
-`buildtools/e2e-tier1.sh` over there.
+`buildtools/acceptance.sh` is the last step, and the only one that installs what an
+operator installs. Everything before it proves the code is right; this proves the
+**package** is. It runs on a stock Hetzner image that has never seen this project -
+never a prepared snapshot - so it exercises the package repository itself: the
+signature, the index, and `Depends: sokar` resolving from the same place.
+
+`buildtools/ci/remote-acceptance.py` provisions the machine, installs from Artifactory
+the way [the README](README.md#install) says, creates an unprivileged user (a task runs
+rootless, so running the suite as root would prove less), runs the suite and destroys the
+server in a `finally`. A `cpx12` is enough - one core and 2 GB, because this installs
+packages and runs a single prompt.
+
+Both distributions, because they differ in ways that have already caused bugs: podman 4
+on Ubuntu 24.04 against podman 5 on Fedora, and SELinux enforcing on one of them.
+
+Two halves:
+
+- **install** - the packages install, `sokar agents` lists an agent it was never linked
+  against, `sokar setup` registers the hooks. No credential needed.
+- **tier 2** - a task authenticates against OpenRouter and completes a prompt, and the
+  real credential is then searched for in the container's environment and in every log
+  the run produced. Needs `SOKAR_E2E_OPENROUTER_API_KEY`; without it this half is skipped
+  and the script still exits 0, so a fork or a revoked key loses coverage rather than
+  turning the build red with no information.
+
+Those last two checks are worth having even when authentication fails. A credential
+scheme that authenticates by handing the real key to the agent has not failed loudly -
+it has failed quietly, and only a real credential makes the leak searchable.
+
+Run it by hand with `workflow_dispatch`, or locally:
+
+```
+REMOTE_BUILD=... SSH="$(cat key)" SOKAR_E2E_OPENROUTER_API_KEY=... \
+  python3 buildtools/ci/remote-acceptance.py --os fedora
+```
+
+## What this repository still cannot check
+
+That a real Claude Code CLI reaches only the hosts its definition declares. That is the
+domain-coverage check, it needs the resolver log from inside a task, and it lives in the
+Sokar repository as `buildtools/e2e-tier1.sh`.

@@ -114,3 +114,47 @@ jobs:
           done
           echo "::error::sokar-agent-claude never appeared in the index - uploaded but not indexed"
           exit 1
+
+  # The last step, and the only one that installs what an operator installs. Everything above
+  # proves the code is right; this proves the PACKAGE is - on a stock image that has never seen
+  # this project, from the repository, with the signature and the dependency on sokar both
+  # resolved the way a user resolves them.
+  #
+  # Both distributions, because the two differ in ways that have already bitten: podman 4 on
+  # 24.04 against podman 5 on Fedora, and SELinux enforcing on one of them.
+  #
+  # Only on main, and only after the packages are published - it installs them.
+  acceptance:
+    name: Acceptance - ${{ matrix.os }}
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, fedora]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the Hetzner client
+        run: pip install --quiet hcloud
+
+      # SOKAR_E2E_OPENROUTER_API_KEY turns the tier 2 half on. Without it the run still checks
+      # that the packages install and that sokar finds the agent, and exits 0 - so a fork or a
+      # revoked key degrades to less coverage rather than to a red build with no information.
+      - name: Acceptance on ${{ matrix.os }}
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SSH: ${{ secrets.SSH }}
+          SOKAR_CI_LEG: acc-${{ matrix.os }}
+          SOKAR_E2E_OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+        run: python3 buildtools/ci/remote-acceptance.py --os ${{ matrix.os }}
+
+      - name: Delete what this run created
+        if: always()
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SOKAR_CI_LEG: acc-${{ matrix.os }}
+        run: python3 buildtools/ci/sweep.py --mine
