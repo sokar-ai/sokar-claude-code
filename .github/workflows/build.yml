@@ -22,7 +22,11 @@ jobs:
 
   build:
     name: Build and unit tests
-    runs-on: ubuntu-latest
+    # Pinned, not 'ubuntu-latest'. The binary is a native image and links glibc dynamically, so
+    # it runs only on that release or newer - and 'ubuntu-latest' moves. The day it becomes
+    # 26.04 the package would stop launching on the current LTS, at the user's machine, with
+    # nothing here going red. 24.04 is the floor Sokar supports.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
