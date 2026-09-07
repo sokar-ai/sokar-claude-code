@@ -8,29 +8,13 @@ The [Sokar](https://github.com/fuinorg/sokar) adapter for
 Needs [Sokar](https://github.com/fuinorg/sokar) itself - this package declares
 `Depends: sokar`, and both come from the same repository.
 
-**Debian and Ubuntu:**
+Set the package repository up once, as the flavour's guide describes —
+[Debian and Ubuntu](https://github.com/fuinorg/sokar/blob/main/doc/getting-started-debian.md)
+or [Fedora and RHEL](https://github.com/fuinorg/sokar/blob/main/doc/getting-started-fedora.md)
+— then:
 
 ```
-sudo apt install -y ca-certificates curl gnupg
-curl -fsSL https://fuinorg.jfrog.io/artifactory/api/security/keypair/sokar-packages/public \
-  | sudo gpg --dearmor -o /usr/share/keyrings/sokar.gpg
-echo "deb [signed-by=/usr/share/keyrings/sokar.gpg] https://fuinorg.jfrog.io/artifactory/sokar-dist-deb snapshots main" \
-  | sudo tee /etc/apt/sources.list.d/sokar.list
-sudo apt update
-sudo apt install sokar-agent-claude
-```
-
-**Fedora and RHEL:**
-
-```
-sudo tee /etc/yum.repos.d/sokar.repo <<'EOF'
-[sokar]
-name=Sokar
-baseurl=https://fuinorg.jfrog.io/artifactory/sokar-dist-rpm/snapshots
-enabled=1
-gpgcheck=0
-EOF
-sudo dnf install sokar-agent-claude
+sudo apt install sokar-agent-claude      # or: sudo dnf install sokar-agent-claude
 ```
 
 Nothing has to be registered afterwards. Sokar scans `/usr/libexec/sokar/agents` and
