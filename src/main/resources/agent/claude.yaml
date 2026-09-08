@@ -27,6 +27,17 @@ config_dir: "~/.claude"
 login:
   arguments: []
 
+# What turns this agent's own permission prompts off. Sokar adds these to every run inside a
+# task, attached or not - it never asks whether to, and there is no option for it: the container
+# is what makes the answer always yes, and unattended there is nobody to answer a prompt anyway.
+# Only the 'how' is declared here, because the flag is this CLI's own and Sokar must not guess it.
+#
+# NOT --allow-dangerously-skip-permissions, which only offers the bypass as an option and leaves
+# it off by default; --dangerously-skip-permissions is the one that actually bypasses. Both are
+# in 'claude --help', one word apart.
+sandboxed:
+  arguments: ["--dangerously-skip-permissions"]
+
 git_identity:
   name: Claude
   email: noreply@anthropic.com
