@@ -8,8 +8,24 @@ name: claude
 label: Claude Code
 binary: claude
 
-# Where this agent keeps its own credentials on the host, for 'sokar vault import'.
+# Where this agent keeps its own credentials, for 'sokar vault import' and for collecting what
+# a login produced. Read on the node when importing, and inside the container when logging in -
+# the agent runs as 'agent' there, so this is /home/agent/.claude in that case.
 config_dir: "~/.claude"
+
+# How this agent logs in, for 'sokar vault login'. The list is arguments to 'binary' above, and
+# an empty list means the binary alone - which is this agent's case: running 'claude' with no
+# credentials starts its own authentication and writes .credentials.json when it finishes.
+#
+# NOT 'setup-token'. That prints a long-lived token to the terminal and writes no credentials
+# file, so there would be nothing for Sokar to collect and the person would be back to copying a
+# value by hand - which is the thing this exists to remove.
+#
+# The section's presence is what says this agent can log in at all. Sokar does not know that
+# Claude Code has such a verb, and must not guess: hardcoding one agent's would be wrong for
+# every other.
+login:
+  arguments: []
 
 git_identity:
   name: Claude
