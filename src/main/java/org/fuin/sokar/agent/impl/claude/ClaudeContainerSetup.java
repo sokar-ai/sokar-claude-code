@@ -11,9 +11,10 @@ import org.fuin.sokar.agent.api.ContainerSetup;
  * variables, which is the shape it declared. An agent that can only be given a URL writes it into
  * a file here instead.
  * <p>
- * Two files for two different owners, which is why each is produced somewhere else:
- * {@link ClaudeFirstRun} is the agent's own state, and {@link AnthropicCredentialFile} is the
- * shape the provider expects a credential in. This class only says that a container needs both.
+ * Three files with three different owners, which is why each is produced somewhere else:
+ * {@link ClaudeFirstRun} is the agent's own state, {@link ClaudeSettings} is configuration a
+ * person would otherwise edit, and {@link AnthropicCredentialFile} is the shape the provider
+ * expects a credential in. This class only says that a container needs all three.
  */
 public class ClaudeContainerSetup implements ContainerSetup {
 
@@ -22,6 +23,7 @@ public class ClaudeContainerSetup implements ContainerSetup {
         return List.of(
                 ContainerFile.of(ClaudeFirstRun.FILE,
                         ClaudeFirstRun.document(context.workspace())),
+                ContainerFile.of(ClaudeSettings.FILE, ClaudeSettings.document()),
                 ContainerFile.secret(AnthropicCredentialFile.FILE,
                         AnthropicCredentialFile.document(context.token(),
                                 context.credentialType())));

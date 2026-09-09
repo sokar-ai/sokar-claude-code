@@ -41,6 +41,30 @@ class ClaudeContainerSetupTest {
     }
 
     @Test
+    void answersTheBypassModeWarningThatTheFlagItselfCauses() {
+
+        // Reported from a clean machine: started with --dangerously-skip-permissions, the CLI
+        // opens with a full-screen warning whose default answer is "No, exit". It is not a
+        // permission prompt, so the flag cannot answer it, and unattended nobody can.
+        final Map<?, ?> settings = parse(named(ClaudeSettings.FILE, "oauth"));
+
+        assertThat(((Map<?, ?>) settings.get("permissions")).get("defaultMode"))
+                .isEqualTo("bypassPermissions");
+        assertThat(settings.get("skipDangerousModePermissionPrompt")).isEqualTo(Boolean.TRUE);
+    }
+
+    @Test
+    void keepsTheSettingsReadableRatherThanSecret() {
+
+        // Configuration, not a credential: nothing in it is worth hiding, and marking it
+        // owner-only would say it was.
+        assertThat(named(ClaudeSettings.FILE, "oauth").ownerOnly()).isFalse();
+        // Beside the credential file, not on top of it. Both live under ~/.claude and writing
+        // one where the other goes would take the token with it.
+        assertThat(ClaudeSettings.FILE).isNotEqualTo(AnthropicCredentialFile.FILE);
+    }
+
+    @Test
     void storesAnOauthTokenWhereItsOwnLoginWould() {
         final Map<?, ?> credentials = parse(named(AnthropicCredentialFile.FILE, "oauth"));
 
