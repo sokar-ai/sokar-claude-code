@@ -1,31 +1,9 @@
 # Follows Claude Code, so nobody has to.
-#
-# Once a week it asks what upstream's 'stable' channel points at, and if that is not what this
-# module pins it does exactly what a person would: rewrite the pin, rebuild, and prove the
-# result on two real machines before anything is published.
-#
-# THE POINT IS THE STOPPING, NOT THE UPDATING. A bot that bumps a version is easy; one that
-# knows what it is not allowed to decide is the reason this exists. It stops and asks when:
-#
-#   * an acceptance suite failed;
-#   * the set of third-party components changed - new code entering a containment tool is
-#     exactly what pinning exists to make visible;
-#   * a license in the shipped tree is new or changed - the package redistributes that code;
-#   * the upstream MAJOR version moved, which changes flags, configuration or an extension API
-#     by definition.
-#
-# Anything else - a patch or minor release, an unchanged component set, green suites - is not
-# a decision, and asking about it teaches whoever is asked to stop reading.
-#
-# Every gate below records its verdict instead of failing the job on the spot, so the run always
-# gets as far as opening a pull request. A red run means "there is a branch waiting and here is
-# why"; a green one means it was clean.
 name: Update
 
 on:
   schedule:
-    # Weekly, Monday morning UTC. Not daily: Claude Code publishes most weekdays, and a job that
-    # opens a pull request more often than anyone reads one is a job that gets muted.
+    # Weekly, Monday morning UTC.
     - cron: '17 5 * * 1'
   workflow_dispatch:
     inputs:
@@ -37,13 +15,12 @@ on:
         required: false
         default: stable
 
-# contents: to push the branch. pull-requests: to open the request.
+# The permissions this workflow needs, and no more.
 permissions:
   contents: write
   pull-requests: write
 
-# Never two at once. Two runs would each open a branch for a different version and the second
-# would compare its bill against a package the first had not published yet.
+# Never two at once.
 concurrency:
   group: update
   cancel-in-progress: false
@@ -60,9 +37,7 @@ jobs:
 
       # ------------------------------------------------------------------ detect
 
-      # Through env, never interpolated into the script: a dispatch input is untrusted text and
-      # reaches the shell before the version check in upstream-version.py can reject it.
-      # On a schedule there are no inputs at all, so this asks 'stable' with nothing to enter.
+      # Through env, never interpolated into the script, so no value can become shell.
       - name: What does upstream publish
         id: detect
         env:
@@ -113,13 +88,13 @@ jobs:
 
       # ------------------------------------------------------------------ verify
 
-      # Gates write STOP rather than failing: the run must still reach the pull-request step.
+      # Gates write STOP rather than failing, so the run can still clean up after itself.
       - name: Unit tests
         if: steps.plan.outputs.proceed == 'yes'
         run: |
           ./mvnw -B -s settings.xml verify || echo "STOP=the unit suite failed" >> "$GITHUB_ENV"
 
-      # Nothing else enforces that the version and the digest agree; this asks upstream's manifest.
+      # Nothing else enforces that the version and the digest agree;
       - name: The pin agrees everywhere it is written
         if: steps.plan.outputs.proceed == 'yes' && !env.STOP
         run: |
@@ -152,16 +127,10 @@ jobs:
           echo "::warning::$WAS -> $TARGET"
           echo "A major release changes flags, configuration or an extension API by definition."
 
-      # Resolved once, and before anything is created: the cleanup below is 'if: always()',
-      # so a run that died earlier would have nothing to delete its machine with.
+      # Before anything is created, so the cleanup below always has something to run.
       - name: Resolve the machine tooling
         if: steps.plan.outputs.proceed == 'yes'
         run: |
-          # settings.xml already sets updatePolicy 'always' for snapshots, so this is as
-          # fresh as the repository is. What it cannot fix is order: this repository's CI needs
-          # a snapshot that Sokar's own build publishes, so a leg started before that build
-          # finished resolves the previous one - measured at eleven minutes on 2026-09-10, and
-          # it failed with the usage text of tooling that predated the command asked of it.
           ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
               -Dmdep.outputFile=target/cp.txt
 
@@ -256,8 +225,7 @@ jobs:
           fi
           echo "opened=yes" >> "$GITHUB_OUTPUT"
 
-      # AUTO-MERGE NEEDS ITS OWN TOKEN: a push made with GITHUB_TOKEN triggers no build, so
-      # merging with it would update main, publish nothing, and report success.
+      # Auto-merge needs its own token: the default one does not trigger a further workflow.
       - name: Merge, or say why not
         if: always() && steps.request.outputs.opened == 'yes'
         env:
