@@ -421,6 +421,29 @@ def ssh_argv(address: str, command: str, user: str = "root") -> list[str]:
             "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=15", f"{user}@{address}", command]
 
 
+def upload(address: str, environment: dict[str, str], sources: list[Path], target: str,
+           user: str = "root") -> None:
+    """
+    Copies files to the server, for the one case a heredoc cannot carry: a package.
+
+    Everything else this module sends is a shell script and travels inside the ssh command.
+    A .deb is six megabytes of binary, so it goes over scp - same agent, same host-key stance,
+    for the same reason.
+
+    :param address: The server.
+    :param environment: What reaches the ssh-agent, from agent().
+    :param sources: Local files.
+    :param target: Where to put them, as user@host:path would name it after the colon.
+    :param user: Who to connect as; root, as everything else at provisioning time does.
+    """
+    argv = ["scp", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+            "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=15"]
+    argv += [str(source) for source in sources] + [f"{user}@{address}:{target}"]
+    result = subprocess.run(argv, env=environment, capture_output=True, text=True, timeout=600)
+    if result.returncode != 0:
+        sys.exit(f"could not copy to {address}: {result.stdout}\n{result.stderr}")
+
+
 def ssh(address: str, environment: dict[str, str], command: str, *, check: bool = True) -> str:
     """Runs one command on the server and returns its output."""
     result = subprocess.run(

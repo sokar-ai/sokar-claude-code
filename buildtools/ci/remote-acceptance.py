@@ -43,6 +43,9 @@ PACKAGE = "sokar-agent-claude"
 # and tells us nothing about the package.
 IMAGES = {"ubuntu": "ubuntu-26.04", "fedora": "fedora-44"}
 
+# Installed by path in the SAME command as sokar: 'dpkg -i' and 'rpm -i' resolve no dependency.
+CANDIDATE = {"ubuntu": "/root/candidate/*.deb", "fedora": "/root/candidate/*.rpm"}
+
 INSTALL = {
     "ubuntu": """
 set -eux
@@ -82,6 +85,10 @@ def main() -> int:
     parser.add_argument("--ssh-private-key", default=None,
                         help="defaults to the SSH environment variable")
     parser.add_argument("--keep", action="store_true", help="leave it running, for debugging")
+    parser.add_argument("--candidate", default=None, metavar="DIR",
+                        help="install the agent package built in DIR instead of the published "
+                             "one, for proving an update before anything is published; sokar "
+                             "itself still comes from the repository")
     parser.add_argument("--cucumber", action="store_true",
                         help="after the script, run the Cucumber suite FROM THIS MACHINE against "
                              "the server, the way a person at a terminal would reach it; needs "
@@ -102,11 +109,29 @@ def main() -> int:
 
         hetzner.await_ssh(address)
 
+        package = PACKAGE
+        if args.candidate:
+            package = CANDIDATE[args.operating_system]
+            built = sorted(Path(args.candidate).glob(Path(package).name))
+            if not built:
+                raise SystemExit(f"--candidate {args.candidate} holds no {Path(package).name}. "
+                                 f"Installing the published package instead would look exactly "
+                                 f"like a green run, and would have proved nothing.")
+            # A working tree accumulates them; letting the package manager pick proves nothing.
+            if len(built) > 1:
+                raise SystemExit(f"--candidate {args.candidate} holds {len(built)} of them: "
+                                 f"{', '.join(one.name for one in built)}. "
+                                 f"Which one is being tested has to be decided here, not by "
+                                 f"whichever the package manager prefers - clean the directory.")
+            print(f"\n-- sending the candidate: {', '.join(one.name for one in built)} --")
+            hetzner.ssh(address, environment, "mkdir -p /root/candidate")
+            hetzner.upload(address, environment, built, "/root/candidate/")
+
         print(f"\n-- installing from {args.artifactory}, as an operator would --")
         key_url = f"{args.artifactory}/api/security/keypair/sokar-packages/public"
         hetzner.ssh(address, environment,
                     INSTALL[args.operating_system].format(base=args.artifactory, key=key_url,
-                                                         package=PACKAGE))
+                                                         package=package))
 
         # An unprivileged user, because that is the shape a task runs in: rootless podman,
         # the operator's own directories. Running the suite as root would prove less.
@@ -127,7 +152,8 @@ def main() -> int:
         # The credential travels as an environment variable on the remote shell, never on a
         # command line: argv is readable by every process on that machine.
         exported = ""
-        for name in ("SOKAR_E2E_OPENROUTER_API_KEY", "SOKAR_E2E_MODEL"):
+        # SOKAR_E2E_EXPECT_CLI is not a credential; it rides here only because it goes to the same place.
+        for name in ("SOKAR_E2E_OPENROUTER_API_KEY", "SOKAR_E2E_MODEL", "SOKAR_E2E_EXPECT_CLI"):
             value = os.environ.get(name, "")
             if value:
                 exported += f"{name}={shell_quote(value)} "

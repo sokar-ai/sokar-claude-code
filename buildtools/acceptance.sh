@@ -144,6 +144,31 @@ else
 fi
 rm -f /tmp/bom-names
 
+# Asked of the MACHINE, not of the build: two sources that cannot drift apart unnoticed.
+# This agent's row, not the first 'installs:': a machine with two agents reported the other one.
+DECLARED="$(sokar agents --supply-chain 2>/dev/null \
+    | awk '$1 == "claude" { found = 1; next } found && $1 == "installs:" { print $2; exit }')"
+IN_BILL="$(python3 -c "
+import json
+def walk(items):
+    for c in items or []:
+        yield c
+        yield from walk(c.get('components'))
+bom = json.load(open('$BOM'))
+print(next((c.get('version','') for c in walk(bom.get('components')) if c['name']=='claude-code'), ''))
+" 2>/dev/null)"
+
+if [ -z "$DECLARED" ]; then
+    fail "the installed adapter does not say which Claude Code version it installs"
+elif [ "$DECLARED" != "$IN_BILL" ]; then
+    fail "the adapter installs $DECLARED, the bill it ships names ${IN_BILL:-nothing}"
+elif [ -n "${SOKAR_E2E_EXPECT_CLI:-}" ] && [ "$DECLARED" != "$SOKAR_E2E_EXPECT_CLI" ]; then
+    # Set by the update pipeline: proof that the candidate, not an older package, got installed.
+    fail "expected Claude Code $SOKAR_E2E_EXPECT_CLI, this machine installs $DECLARED"
+else
+    pass "this machine installs Claude Code $DECLARED, and its bill agrees"
+fi
+
 echo
 echo "-- what sokar thinks of this machine --"
 podman --version | while read -r line; do info "$line"; done
