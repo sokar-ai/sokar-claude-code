@@ -60,26 +60,38 @@ jobs:
 
       # ------------------------------------------------------------------ detect
 
+      # Through env, never interpolated into the script: a dispatch input is untrusted text and
+      # reaches the shell before the version check in upstream-version.py can reject it.
+      # On a schedule there are no inputs at all, so this asks 'stable' with nothing to enter.
       - name: What does upstream publish
         id: detect
+        env:
+          CHANNEL: ${{ inputs.channel || 'stable' }}
+          VERSION: ${{ inputs.version }}
         run: |
           set -eu
           # A dispatch answers for the channel, so 'major' is still measured against what is pinned.
-          python3 buildtools/upstream-version.py \
-              --channel "${{ inputs.channel || 'stable' }}" \
-              ${{ inputs.version && format('--upstream {0}', inputs.version) || '' }}
+          if [ -n "${VERSION:-}" ]; then
+              python3 buildtools/upstream-version.py --channel "$CHANNEL" --upstream "$VERSION"
+          else
+              python3 buildtools/upstream-version.py --channel "$CHANNEL"
+          fi
 
       - name: What this run will do
         id: plan
+        env:
+          UPDATE: ${{ steps.detect.outputs.update }}
+          UPSTREAM: ${{ steps.detect.outputs.upstream }}
+          PINNED: ${{ steps.detect.outputs.pinned }}
         run: |
           set -eu
-          if [ "${{ steps.detect.outputs.update }}" = "yes" ]; then
-              echo "target=${{ steps.detect.outputs.upstream }}" >> "$GITHUB_OUTPUT"
+          if [ "$UPDATE" = "yes" ]; then
+              echo "target=$UPSTREAM" >> "$GITHUB_OUTPUT"
               echo "proceed=yes" >> "$GITHUB_OUTPUT"
-              echo "This module pins ${{ steps.detect.outputs.pinned }}; the target is ${{ steps.detect.outputs.upstream }}."
+              echo "This module pins $PINNED; the target is $UPSTREAM."
           else
               echo "proceed=no" >> "$GITHUB_OUTPUT"
-              echo "Claude Code ${{ steps.detect.outputs.pinned }} is still what the channel points at."
+              echo "Claude Code $PINNED is still what the channel points at."
               echo "Nothing to do. This is the ordinary outcome of this job."
           fi
 
@@ -87,7 +99,9 @@ jobs:
 
       - name: Pin it
         if: steps.plan.outputs.proceed == 'yes'
-        run: python3 buildtools/update.py "${{ steps.plan.outputs.target }}"
+        env:
+          TARGET: ${{ steps.plan.outputs.target }}
+        run: python3 buildtools/update.py "$TARGET"
 
       - name: Set up GraalVM
         if: steps.plan.outputs.proceed == 'yes'
@@ -130,9 +144,12 @@ jobs:
 
       - name: The major version moved
         if: steps.plan.outputs.proceed == 'yes' && steps.detect.outputs.major == 'moved'
+        env:
+          WAS: ${{ steps.detect.outputs.pinned }}
+          TARGET: ${{ steps.plan.outputs.target }}
         run: |
           echo "STOP=the upstream major version moved" >> "$GITHUB_ENV"
-          echo "::warning::${{ steps.detect.outputs.pinned }} -> ${{ steps.plan.outputs.target }}"
+          echo "::warning::$WAS -> $TARGET"
           echo "A major release changes flags, configuration or an extension API by definition."
 
       - name: Install the Hetzner client
