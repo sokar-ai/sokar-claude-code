@@ -35,6 +35,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 ### Changed
 
 - Claude Code pinned to 2.1.267 (was 2.1.236).
+- A change that ships nothing observable can say `[no changelog]` in a commit message.
 - The installed version is no longer asserted in a unit test, where every bump had to be applied.
 
 ### Security

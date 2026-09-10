@@ -12,6 +12,11 @@ CHANGELOG.md has to be in that range too.
 Documentation and editor settings are exempt, because a typo fix is not a notable change and
 requiring an entry for one teaches people to write entries that say nothing.
 
+A change that ships nothing observable - a comment, a rename, a workflow tidy - says
+[no changelog] in a commit message and passes. Nothing can tell a comment from a behavior
+change by looking at a diff, so the judgement is a person's; the marker makes it one somebody
+made on purpose, in the log, rather than a rule quietly bent.
+
 Exit codes:
 
     0   the changelog was updated, or nothing needed it
@@ -37,6 +42,9 @@ CHANGELOG = "CHANGELOG.md"
 EXEMPT = ("*.md", ".gitignore", ".idea/*", "LICENSE")
 
 EMPTY = "0" * 40
+
+# What a person writes when a change ships nothing an operator could observe.
+WAIVER = "[no changelog]"
 
 
 def here(commit: str) -> bool:
@@ -89,6 +97,12 @@ def main() -> int:
     if not base or base.startswith(EMPTY[:8]):
         print(f"::warning::no commit to compare against ({base!r}), so the changelog was not "
               f"checked. This is not the same as 'it was updated'.")
+        return 0
+
+    waived = subprocess.run(["git", "log", "--format=%B", f"{base}..{head}"],
+                            capture_output=True, text=True)
+    if WAIVER in waived.stdout:
+        print(f"a commit message says {WAIVER}, so no entry is required")
         return 0
 
     files = changed(base, head)
