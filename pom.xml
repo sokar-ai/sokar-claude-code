@@ -257,6 +257,7 @@
                                     <arguments>
                                         <argument>${project.build.directory}/${project.artifactId}.cdx.json</argument>
                                         <argument>${project.build.outputDirectory}/agent/claude.yaml</argument>
+                                        <argument>claude-code</argument>
                                     </arguments>
                                 </configuration>
                             </execution>

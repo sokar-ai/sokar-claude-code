@@ -11,7 +11,11 @@ Read from the FILTERED definition in target/classes rather than from the POM: th
 the agent binary answers `describe` with, so the version and digest recorded are the ones an
 image build will actually use.
 
-    add-fetched-cli.py <bom.json> <agent.yaml>
+    add-fetched-cli.py <bom.json> <agent.yaml> <component-name>
+
+The name is an argument because two agents fetch a CLI this way and the file is otherwise the
+same in both repositories. It has to match what `compare-bills.py --expect-moved` is given, or
+the update gate watches for a component that is not there and stops on nothing.
 """
 import json
 import re
@@ -19,7 +23,7 @@ import sys
 
 
 def main() -> int:
-    bom_path, yaml_path = sys.argv[1], sys.argv[2]
+    bom_path, yaml_path, name = sys.argv[1], sys.argv[2], sys.argv[3]
 
     text = open(yaml_path, encoding="utf-8").read()
     version = re.search(r'^\s*version:\s*"?([^"\n]+)"?', text, re.M)
@@ -34,9 +38,9 @@ def main() -> int:
 
     component = {
         "type": "application",
-        "name": "claude-code",
+        "name": name,
         "version": version.group(1),
-        "purl": f"pkg:generic/claude-code@{version.group(1)}?download_url={url.group(1)}",
+        "purl": f"pkg:generic/{name}@{version.group(1)}?download_url={url.group(1)}",
         "externalReferences": [{"type": "distribution", "url": url.group(1)}],
         # Not in this package. An image build fetches it, so a reader of the bill knows to look
         # for it there rather than in the payload.
@@ -48,7 +52,7 @@ def main() -> int:
     bom.setdefault("components", []).append(component)
     with open(bom_path, "w", encoding="utf-8") as handle:
         json.dump(bom, handle, indent=2)
-    print(f"add-fetched-cli: recorded claude-code {version.group(1)} as fetched, not shipped")
+    print(f"add-fetched-cli: recorded {name} {version.group(1)} as fetched, not shipped")
     return 0
 
 
