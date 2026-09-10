@@ -8,7 +8,7 @@ Feature: What a person sees with this agent, before there is any credential
     # This agent's tooling lives in the task image, not on the node, so 'sokar vault login' runs
     # the login in a throwaway container and collects what it produces. Dry-run says what it
     # would do and does nothing.
-    When a script runs "sokar vault login claude --dry-run"
+    When logging in to the "claude" agent is attempted
     Then it exits zero
     And its output contains "claude"
 
@@ -21,27 +21,16 @@ Feature: What a person sees with this agent, before there is any credential
     And the terminal shows "refused:"
     And the terminal shows "raw.githubusercontent.com"
 
-  # The removal states the premise instead of assuming it. credential.feature stores an
-  # 'openrouter' credential on this machine, so whether a task can authenticate here depends
-  # on what another feature did earlier - this scenario passed for the agent whose provider is
-  # anthropic and failed for the two whose provider is openrouter, which was luck either way.
-  # Removing is idempotent: 'nothing named x was in the vault' is a success.
-  #
-  # A prompt, because that is what makes the run unattended, and only an unattended run is
-  # refused for a missing credential: nobody is watching one, so a warning would go into an
-  # empty room. An attached shell deliberately needs no credential - working inside the
-  # container by hand is what it is for - and --dry-run stops before the check entirely,
-  # which is what this scenario used to ask and why it never saw the message.
   Scenario: starting a task without a credential says what is missing, before anything is built
     Given a project called "nocred" of class "guarded" with a file in it
     And the vault is unlocked with the passphrase "sokar-acceptance-passphrase"
-    And a script runs "sokar vault remove anthropic"
-    When a script runs "cd ~/nocred && sokar task run --agent claude --prompt hello"
+    And the vault holds no credential for "anthropic"
+    When a task nobody is watching is started in "nocred" for the "claude" agent
     Then its output mentions one of "no credential, is locked, cannot authenticate"
     And its output contains "anthropic"
 
   Scenario: a script is never asked a question by this agent's task
     Given a project called "noask" of class "guarded" with a file in it
-    When a script runs "cd ~/noask && sokar task run --agent claude --dry-run --no-attach"
+    When a script asks what a task in "noask" for the "claude" agent would do
     Then its output does not contain "[Y/n]"
     And its output contains no escape sequences
