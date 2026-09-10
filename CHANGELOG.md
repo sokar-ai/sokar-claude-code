@@ -32,4 +32,8 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 - The update workflow takes its dispatch input through the environment rather than the shell.
 
+### Fixed
+
+- The changelog check works in CI's shallow clone, where it could not resolve either commit.
+
 [Unreleased]: https://github.com/fuinorg/sokar-claude-code/commits/main

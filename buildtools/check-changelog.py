@@ -39,19 +39,46 @@ EXEMPT = ("*.md", ".gitignore", ".idea/*", "LICENSE")
 EMPTY = "0" * 40
 
 
+def here(commit: str) -> bool:
+    """Whether the object is in this clone."""
+    return subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"],
+                          capture_output=True).returncode == 0
+
+
+def fetch(commit: str) -> None:
+    """
+    Fetches one commit into a shallow clone, which is what CI hands this script.
+
+    actions/checkout clones with depth 1, so the commit a push came FROM is not present and
+    the comparison cannot be made at all. This cost two publishes: the guard exited 2 on every
+    run and never once looked at a changelog. Deliberately here rather than as fetch-depth on
+    the checkout step, so the check keeps working whatever a later edit does to that step.
+    """
+    subprocess.run(["git", "fetch", "--no-tags", "--depth=1", "origin", commit],
+                   capture_output=True, text=True)
+
+
 def changed(base: str, head: str) -> list[str]:
     """
     Lists the files that differ between two commits.
+
+    Two arguments rather than 'base..head': a range has to be resolvable, while a two-commit
+    diff only needs both objects to exist - which matters when their history is not connected.
 
     :param base: What to compare from.
     :param head: What to compare to.
     :return: Repository-relative paths.
     """
+    for commit in (base, head):
+        if not here(commit):
+            fetch(commit)
     try:
-        out = subprocess.run(["git", "diff", "--name-only", f"{base}..{head}"],
+        out = subprocess.run(["git", "diff", "--name-only", base, head],
                              capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as failure:
-        print(f"could not read {base}..{head}: {failure.stderr.strip()}", file=sys.stderr)
+        print(f"could not compare {base} with {head}: {failure.stderr.strip()}", file=sys.stderr)
+        print("Both commits have to be in this clone; a shallow checkout holds neither.",
+              file=sys.stderr)
         sys.exit(2)
     return [line for line in out.stdout.splitlines() if line]
 
