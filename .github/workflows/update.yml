@@ -157,7 +157,12 @@ jobs:
       - name: Resolve the machine tooling
         if: steps.plan.outputs.proceed == 'yes'
         run: |
-          ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
+          # -U because this resolves a snapshot that moves several times a day. Maven's
+          # default is to refresh a snapshot once a day, and the runner restores ~/.m2 from a
+          # cache - so without it a leg runs against whatever the tooling looked like yesterday.
+          # Measured: a leg failed with the usage text of a build that predated the command it
+          # was being asked for.
+          ./mvnw -B -q -U -Pci-tools -s settings.xml dependency:build-classpath \
               -Dmdep.outputFile=target/cp.txt
 
       - name: Acceptance - ubuntu
