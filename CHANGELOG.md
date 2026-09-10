@@ -13,7 +13,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 ### Changed
 
 - The workflow rents, provisions and deletes its machines with Sokar's Java tooling instead of a copy of a Python script.
-- CI refreshes that tooling on every run, so a leg cannot be driven by yesterday's snapshot.
+- CI says which command it does not know, so tooling older than the caller reads as that rather than as a mistake in the workflow.
 
 ### Removed
 
