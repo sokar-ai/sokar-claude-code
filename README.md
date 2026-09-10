@@ -170,9 +170,9 @@ so `--provider openrouter` works with no change here.
 `platform.claude.com` is contacted before an interactive session starts, and the
 CLI quits if it cannot reach it - whatever the credential is.
 
-`refused` is a deliberate denial, not an oversight: 2.1.236 resolves a Datadog
-log intake during a normal run, and Sokar does not give it one. The CLI works
-without it. It is declared rather than merely absent so that a test can tell a
+`refused` is a deliberate denial, not an oversight: measured on 2.1.236, the CLI
+resolves a Datadog log intake during a normal run, and Sokar does not give it
+one. The CLI works without it. It is declared rather than merely absent so that a test can tell a
 policy from a mistake, and so you can see what is being blocked.
 
 ## When it will not authenticate
