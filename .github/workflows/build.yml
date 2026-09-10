@@ -49,6 +49,14 @@ jobs:
 
       # -s settings.xml declares the snapshot repository the agent contract is resolved from,
       # and keeps a developer's own ~/.m2/settings.xml out of what makes a build work.
+      # A changelog nobody is obliged to write stops being written. Documentation and editor
+      # settings are exempt; a version bump applied by update.py writes its own entry.
+      - name: The changelog says what changed
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: python3 buildtools/check-changelog.py "$BASE" "$HEAD"
+
       - name: Build and unit tests
         run: ./mvnw -B -s settings.xml verify
 

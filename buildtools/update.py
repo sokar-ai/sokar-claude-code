@@ -4,10 +4,11 @@ Moves this module to a new Claude Code version, doing exactly what a person woul
 
     update.py <version> [--dry-run]
 
-Two things are written by hand today and both are written here:
+Three things are written by hand today and all three are written here:
 
-    pom.xml                             <agent.cli.version>
-    src/main/resources/agent/claude.yaml    the SHA-256 of the linux-x64 binary
+    pom.xml                                  <agent.cli.version>
+    src/main/resources/agent/claude.yaml     the SHA-256 of the linux-x64 binary
+    CHANGELOG.md                             what moved, under Unreleased
 
 Everything else that names the version - the definition's install section, the download URL,
 the package description in both the deb and the rpm - is FILTERED from that property, so it
@@ -53,6 +54,11 @@ VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 ROOT = Path(__file__).resolve().parents[1]
 POM = ROOT / "pom.xml"
 DEFINITION = ROOT / "src" / "main" / "resources" / "agent" / "claude.yaml"
+CHANGELOG = ROOT / "CHANGELOG.md"
+
+# How the entry this script owns is recognized on a later run. Anything else under Changed is
+# somebody's prose and is never touched.
+ENTRY = re.compile(r"^- Claude Code pinned to (\S+?)\.?(?: \(was (\S+?)\.?\))?\.$", re.M)
 
 
 def manifest(version: str) -> dict:
@@ -108,6 +114,47 @@ def replace_once(text: str, pattern: re.Pattern, replacement, what: str) -> str:
     return rewritten
 
 
+def note_the_change(text: str, version: str, was: str) -> str:
+    """
+    Records the new version under Unreleased, replacing this script's own earlier entry.
+
+    A weekly job would otherwise add a line every time it ran, and fifty-two lines saying the
+    same thing in different numbers is not a changelog. One line survives, and it keeps the
+    version of the LAST RELEASE as its "was" - the reader wants the net move since something
+    shipped, not the last hop.
+
+    :param text: The changelog.
+    :param version: The version now pinned.
+    :param was: What this run replaced.
+    :return: The rewritten changelog.
+    """
+    existing = ENTRY.search(text)
+    since = existing.group(2) if existing and existing.group(2) else was
+    line = f"- Claude Code pinned to {version} (was {since})."
+
+    if existing:
+        return text[:existing.start()] + line + text[existing.end():]
+
+    lines = text.split("\n")
+    try:
+        at = next(i for i, one in enumerate(lines) if one.rstrip() == "## [Unreleased]")
+    except StopIteration:
+        print("CHANGELOG.md has no '## [Unreleased]' heading to write under", file=sys.stderr)
+        sys.exit(1)
+
+    # Only this release's own block: a Changed heading under an older release is not ours.
+    ends = next((i for i in range(at + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    heading = next((i for i in range(at, ends) if lines[i].rstrip() == "### Changed"), None)
+
+    if heading is None:
+        lines[at + 1:at + 1] = ["", "### Changed", "", line]
+    else:
+        # First bullet of the list, with no blank line between it and the next.
+        first = next((i for i in range(heading + 1, ends) if lines[i].startswith("- ")), None)
+        lines.insert(first if first is not None else heading + 2, line)
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pins a new Claude Code version.")
     parser.add_argument("version", help="the release to pin, e.g. 2.1.267")
@@ -157,6 +204,9 @@ def main() -> int:
                        r"[^<]+(</version>)"),
             lambda m: f"{m.group(1)}{bumped}{m.group(2)}", "the module's own version")
 
+    changelog = note_the_change(CHANGELOG.read_text(encoding="utf-8"),
+                                args.version, was.group(1).strip())
+
     print(f"  claude code   {was.group(1).strip()} -> {args.version}")
     print(f"  sha256        {digest}  ({PLATFORM}, from the published manifest)")
     if bumped:
@@ -164,6 +214,7 @@ def main() -> int:
     elif module:
         print(f"  this module   {module.group(1)}, unchanged - the CI run number already orders "
               f"snapshot packages")
+    print(f"  changelog     {ENTRY.search(changelog).group(0)}")
 
     if args.dry_run:
         print("\n--dry-run: nothing written")
@@ -171,6 +222,7 @@ def main() -> int:
 
     POM.write_text(pom, encoding="utf-8")
     DEFINITION.write_text(definition, encoding="utf-8")
+    CHANGELOG.write_text(changelog, encoding="utf-8")
     print(f"\nwritten. Review the diff, then: Pin Claude Code {args.version}")
     return 0
 
