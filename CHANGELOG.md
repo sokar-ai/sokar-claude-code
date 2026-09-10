@@ -44,6 +44,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Fixed
 
+- The acceptance suite refuses a run as root, rather than passing every check but the one that needs the broker.
 - The changelog check works in CI's shallow clone, where it could not resolve either commit.
 
 [Unreleased]: https://github.com/fuinorg/sokar-claude-code/commits/main
