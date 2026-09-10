@@ -1,16 +1,16 @@
 # sokar-claude-code
 
-The [Sokar](https://github.com/fuinorg/sokar) adapter for
+The [Sokar](https://github.com/sokar-ai/sokar) adapter for
 [Claude Code](https://github.com/anthropics/claude-code).
 
 ## Install
 
-Needs [Sokar](https://github.com/fuinorg/sokar) itself - this package declares
+Needs [Sokar](https://github.com/sokar-ai/sokar) itself - this package declares
 `Depends: sokar`, and both come from the same repository.
 
 Set the package repository up once, as the flavour's guide describes —
-[Debian and Ubuntu](https://github.com/fuinorg/sokar/blob/main/doc/getting-started-debian.md)
-or [Fedora and RHEL](https://github.com/fuinorg/sokar/blob/main/doc/getting-started-fedora.md)
+[Debian and Ubuntu](https://github.com/sokar-ai/sokar/blob/main/doc/getting-started-debian.md)
+or [Fedora and RHEL](https://github.com/sokar-ai/sokar/blob/main/doc/getting-started-fedora.md)
 — then:
 
 ```
@@ -42,7 +42,7 @@ something goes wrong:
 
 The package does not contain the CLI. It carries a pinned URL and a SHA-256, and
 the image build fetches and verifies it — see
-[your tooling](https://github.com/fuinorg/sokar/blob/main/your-tooling.md).
+[your tooling](https://github.com/sokar-ai/sokar/blob/main/your-tooling.md).
 
 ## Which credential do you have?
 
