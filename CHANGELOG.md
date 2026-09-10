@@ -47,6 +47,7 @@ Nothing has been released yet, so everything so far is unreleased.
 
 ### Changed
 
+- Claude Code pinned to 2.1.267 (was 2.1.236).
 - The version a package installs is no longer written in a unit test. It was, and that made
   the test a place every version bump had to be applied, so a correct update went red and
   the way to get green was to edit an assertion.
