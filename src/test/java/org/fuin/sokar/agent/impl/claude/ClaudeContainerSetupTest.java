@@ -16,8 +16,16 @@ class ClaudeContainerSetupTest {
     private static final String TOKEN = "sokar_pt_example";
 
     private List<ContainerFile> files(String type) {
+        return withToken(TOKEN, type);
+    }
+
+    private List<ContainerFile> withToken(String token, String type) {
         return new ClaudeContainerSetup().files(new org.fuin.sokar.agent.api.SetupContext(
-                TOKEN, type, "/workspace", "", "anthropic"));
+                token, type, "/workspace", "", "anthropic"));
+    }
+
+    private List<String> paths(List<ContainerFile> files) {
+        return files.stream().map(ContainerFile::path).toList();
     }
 
     private Map<?, ?> parse(ContainerFile file) {
@@ -98,5 +106,23 @@ class ClaudeContainerSetupTest {
         // and nothing else in Sokar can catch them drifting apart.
         assertThat(parse(named(AnthropicCredentialFile.FILE, "oauth")).get("claudeAiOauth"))
                 .isNotNull();
+    }
+
+    @Test
+    void placesWhatIsNotACredentialForATaskThatHasNone() {
+
+        // Measured on a VM: none of the three files were placed without a token, so a person
+        // logging in inside the container met every dialog these files exist to answer.
+        assertThat(paths(withToken("", "oauth")))
+                .contains(ClaudeFirstRun.FILE, ClaudeSettings.FILE);
+    }
+
+    @Test
+    void writesNoCredentialFileWithoutAToken() {
+
+        // Written empty it states an empty key rather than no key, and the CLI fails with it
+        // looking exactly like a wrong one.
+        assertThat(paths(withToken("   ", "oauth"))).doesNotContain(AnthropicCredentialFile.FILE);
+        assertThat(paths(withToken(TOKEN, "oauth"))).contains(AnthropicCredentialFile.FILE);
     }
 }
