@@ -148,7 +148,7 @@ workflow, so merging with it would update `main`, publish nothing, and report su
 The job refuses that rather than producing it.
 
 **How an update is proved before it is published.**
-`remote-acceptance.py --candidate target` installs the packages built in that run
+`Main acceptance --candidate target` installs the packages built in that run
 instead of the published ones, in the same command that installs `sokar` from
 Artifactory - so the repository, its signature, the index and `Depends: sokar` are
 all still exercised, and one package comes from a file. `SOKAR_E2E_EXPECT_CLI` makes
@@ -182,7 +182,7 @@ operator installs. Everything before it proves the code is right; this proves th
 never a prepared snapshot - so it exercises the package repository itself: the
 signature, the index, and `Depends: sokar` resolving from the same place.
 
-`buildtools/ci/remote-acceptance.py` provisions the machine, installs from Artifactory
+`org.fuin.sokar.machines.Main acceptance` provisions the machine, installs from Artifactory
 the way [the README](README.md#install) says, creates an unprivileged user (a task runs
 rootless, so running the suite as root would prove less), runs the suite and destroys the
 server in a `finally`. A `cpx12` is enough - one core and 2 GB, because this installs
@@ -223,7 +223,8 @@ Run it by hand with `workflow_dispatch`, or locally:
 
 ```
 REMOTE_BUILD=... SSH="$(cat key)" SOKAR_E2E_OPENROUTER_API_KEY=... \
-  python3 buildtools/ci/remote-acceptance.py --os fedora
+  java -cp "$(cat target/cp.txt)" org.fuin.sokar.machines.Main acceptance \
+      --os fedora --package sokar-agent-claude --script buildtools/acceptance.sh
 ```
 
 ## What this repository still cannot check

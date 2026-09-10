@@ -152,12 +152,14 @@ jobs:
           echo "::warning::$WAS -> $TARGET"
           echo "A major release changes flags, configuration or an extension API by definition."
 
-      - name: Install the Hetzner client
-        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
-        run: pip install --quiet hcloud
+      # Resolved once, and before anything is created: the cleanup below is 'if: always()',
+      # so a run that died earlier would have nothing to delete its machine with.
+      - name: Resolve the machine tooling
+        if: steps.plan.outputs.proceed == 'yes'
+        run: |
+          ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
+              -Dmdep.outputFile=target/cp.txt
 
-      # One leg at a time: three repositories rent from one Hetzner project and nothing
-      # coordinates them. --candidate tests the packages built above, BEFORE anything is published.
       - name: Acceptance - ubuntu
         if: steps.plan.outputs.proceed == 'yes' && !env.STOP
         env:
@@ -168,7 +170,9 @@ jobs:
           SOKAR_E2E_MODEL: z-ai/glm-5.3-flash
           SOKAR_E2E_EXPECT_CLI: ${{ steps.plan.outputs.target }}
         run: |
-          python3 buildtools/ci/remote-acceptance.py --os ubuntu --cucumber --candidate target \
+          java -cp "$(cat target/cp.txt)" org.fuin.sokar.machines.Main acceptance \
+              --os ubuntu --package sokar-agent-claude --script buildtools/acceptance.sh \
+              --cucumber . --candidate target \
               || echo "STOP=acceptance failed on ubuntu" >> "$GITHUB_ENV"
 
       - name: Acceptance - fedora
@@ -181,7 +185,9 @@ jobs:
           SOKAR_E2E_MODEL: z-ai/glm-5.3-flash
           SOKAR_E2E_EXPECT_CLI: ${{ steps.plan.outputs.target }}
         run: |
-          python3 buildtools/ci/remote-acceptance.py --os fedora --cucumber --candidate target \
+          java -cp "$(cat target/cp.txt)" org.fuin.sokar.machines.Main acceptance \
+              --os fedora --package sokar-agent-claude --script buildtools/acceptance.sh \
+              --cucumber . --candidate target \
               || echo "STOP=acceptance failed on fedora" >> "$GITHUB_ENV"
 
       - name: Delete what this run created
@@ -189,14 +195,14 @@ jobs:
         env:
           REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
           SOKAR_CI_LEG: upd-ubuntu
-        run: python3 buildtools/ci/sweep.py --mine || true
+        run: java -cp "$(cat target/cp.txt)" org.fuin.sokar.machines.Main sweep --mine || true
 
       - name: Delete what this run created - fedora leg
         if: always() && steps.plan.outputs.proceed == 'yes'
         env:
           REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
           SOKAR_CI_LEG: upd-fedora
-        run: python3 buildtools/ci/sweep.py --mine || true
+        run: java -cp "$(cat target/cp.txt)" org.fuin.sokar.machines.Main sweep --mine || true
 
       # ------------------------------------------------------------------ ask, or publish
 

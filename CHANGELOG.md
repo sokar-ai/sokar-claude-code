@@ -12,11 +12,11 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
-- The workflow deletes its rented machines with Sokar's Java tooling instead of a copy of a Python script.
+- The workflow rents, provisions and deletes its machines with Sokar's Java tooling instead of a copy of a Python script.
 
 ### Removed
 
-- `buildtools/ci/sweep.py`, and the sweeping half of `buildtools/ci/hetzner.py`.
+- `buildtools/ci/` entirely: `sweep.py`, `remote-acceptance.py` and `hetzner.py`, which were a copy of the same helpers in four repositories.
 
 ### Added
 
