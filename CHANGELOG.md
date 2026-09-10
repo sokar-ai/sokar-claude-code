@@ -10,6 +10,14 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ## [Unreleased]
 
+### Changed
+
+- The workflow deletes its rented machines with Sokar's Java tooling instead of a copy of a Python script.
+
+### Removed
+
+- `buildtools/ci/sweep.py`, and the sweeping half of `buildtools/ci/hetzner.py`.
+
 ### Added
 
 - The Claude Code adapter: definition, credential extraction, headless commands, log formatting.
