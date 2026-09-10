@@ -82,30 +82,28 @@ the package ships, so the two cannot drift apart unnoticed.
 
 ## The changelog
 
-`CHANGELOG.md`, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. Two
-versions appear in this repository and they move independently: **this package's version**
-is what the headings name, and **Claude Code's version** is what the package installs,
-recorded as an entry rather than as a heading.
+`CHANGELOG.md`, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
+**One sentence per change** - it is a compressed summary of the commits it covers, and
+`git log` is where anyone who wants the reasoning goes.
 
-**It is not written by hand for a version bump.** `buildtools/update.py` writes its own
-line, replacing the one it wrote last time rather than adding another - a weekly job would
-otherwise leave fifty-two lines a year saying the same thing in different numbers. The
-`(was ...)` it keeps is the version at the **last release**, not the last hop, because the
-reader wants the net move since something shipped:
+Headings name this package's version; Claude Code's version is what the package installs and
+appears as an entry rather than a heading.
+
+**A version bump is not written by hand.** `buildtools/update.py` writes its own line and
+replaces the one it wrote last time, so a weekly job leaves one line rather than fifty-two a
+year. The `(was ...)` it keeps is the version at the last release, not the last hop:
 
 ```
 - Claude Code pinned to 2.2.0 (was 2.1.236).
 ```
 
-Left to itself the changelog would have become a fifth place a bump has to be applied,
-which is exactly the trap that made the version in a unit test worth removing.
+Left to itself the changelog would have become a fifth place a bump has to be applied, which
+is the trap that made the version in a unit test worth removing.
 
-**Everything else is written by hand, and `buildtools/check-changelog.py` fails a build
-that forgot.** Documentation, `LICENSE`, `.gitignore` and editor settings are exempt;
-source, `pom.xml` and the workflows are not, because they decide what an operator receives.
-It compares two commits, so on the first push of a branch there is nothing to compare
-against - it says so and passes rather than failing every new branch. That hole is real and
-stated rather than hidden: this is a reminder for the ordinary case, not a wall.
+**Everything else is by hand, and `buildtools/check-changelog.py` fails a build that forgot.**
+Documentation, `LICENSE`, `.gitignore` and editor settings are exempt; source, `pom.xml` and
+the workflows are not. It compares two commits, so on a branch's first push there is nothing
+to compare against - it says so and passes rather than failing every new branch.
 
 ## Following Claude Code without watching it
 
