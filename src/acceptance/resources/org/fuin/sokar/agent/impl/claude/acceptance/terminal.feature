@@ -21,10 +21,15 @@ Feature: What a person sees with this agent, before there is any credential
     And the terminal shows "refused:"
     And the terminal shows "raw.githubusercontent.com"
 
+  # A prompt, because that is what makes the run unattended, and only an unattended run is
+  # refused for a missing credential: nobody is watching one, so a warning would go into an
+  # empty room. An attached shell deliberately needs no credential - working inside the
+  # container by hand is what it is for - and --dry-run stops before the check entirely,
+  # which is what this scenario used to ask and why it never saw the message.
   Scenario: starting a task without a credential says what is missing, before anything is built
     Given a project called "nocred" of class "guarded" with a file in it
     And the vault is unlocked with the passphrase "sokar-acceptance-passphrase"
-    When a script runs "cd ~/nocred && sokar task run --agent claude --dry-run --no-attach"
+    When a script runs "cd ~/nocred && sokar task run --agent claude --prompt hello"
     Then its output mentions one of "no credential, is locked, cannot authenticate"
     And its output contains "anthropic"
 
