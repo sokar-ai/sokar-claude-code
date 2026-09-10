@@ -52,6 +52,11 @@ jobs:
       - name: Build and unit tests
         run: ./mvnw -B -s settings.xml verify
 
+      # A bump that forgets the digest builds, tests and packages green, and fails at an image
+      # build on somebody else's machine. Not a unit test: it needs the network, 'mvn -o' must work.
+      - name: The pin agrees everywhere it is written
+        run: python3 buildtools/check-pin.py
+
       # The packages are what an operator installs, so a build that has not produced them has
       # not proved much. Native-image needs the GraalVM set up above.
       # The run number is what makes one snapshot package newer than the last. Without it every

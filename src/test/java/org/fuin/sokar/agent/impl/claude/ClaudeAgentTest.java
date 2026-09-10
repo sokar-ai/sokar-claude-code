@@ -171,7 +171,8 @@ class ClaudeAgentTest {
         // and make "which version ran" answerable from the definition.
         final var definition = agent.definition();
 
-        assertThat(definition.version()).isEqualTo("2.1.236");
+        // No literal version: written down here, it was a fourth place every bump had to be applied.
+        assertThat(definition.version()).matches("\\d+\\.\\d+\\.\\d+");
         assertThat(definition.artifacts()).singleElement().satisfies(artifact -> {
             assertThat(artifact.url()).startsWith("https://downloads.claude.ai/");
             assertThat(artifact.url()).contains(definition.version());
