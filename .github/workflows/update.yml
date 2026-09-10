@@ -1,0 +1,264 @@
+# Follows Claude Code, so nobody has to.
+#
+# Once a week it asks what upstream's 'stable' channel points at, and if that is not what this
+# module pins it does exactly what a person would: rewrite the pin, rebuild, and prove the
+# result on two real machines before anything is published.
+#
+# THE POINT IS THE STOPPING, NOT THE UPDATING. A bot that bumps a version is easy; one that
+# knows what it is not allowed to decide is the reason this exists. It stops and asks when:
+#
+#   * an acceptance suite failed;
+#   * the set of third-party components changed - new code entering a containment tool is
+#     exactly what pinning exists to make visible;
+#   * a license in the shipped tree is new or changed - the package redistributes that code;
+#   * the upstream MAJOR version moved, which changes flags, configuration or an extension API
+#     by definition.
+#
+# Anything else - a patch or minor release, an unchanged component set, green suites - is not
+# a decision, and asking about it teaches whoever is asked to stop reading.
+#
+# Every gate below records its verdict instead of failing the job on the spot, so the run always
+# gets as far as opening a pull request. A red run means "there is a branch waiting and here is
+# why"; a green one means it was clean.
+name: Update
+
+on:
+  schedule:
+    # Weekly, Monday morning UTC. Not daily: Claude Code publishes most weekdays, and a job that
+    # opens a pull request more often than anyone reads one is a job that gets muted.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Pin this exact version instead of asking upstream'
+        required: false
+      channel:
+        description: "Which pointer to follow when no version is given"
+        required: false
+        default: stable
+
+# contents: to push the branch. pull-requests: to open the request.
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never two at once. Two runs would each open a branch for a different version and the second
+# would compare its bill against a package the first had not published yet.
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+
+  update:
+    name: Follow Claude Code
+    runs-on: ubuntu-24.04
+
+    steps:
+
+      - uses: actions/checkout@v7
+
+      # ------------------------------------------------------------------ detect
+
+      - name: What does upstream publish
+        id: detect
+        run: |
+          set -eu
+          # A dispatch answers for the channel, so 'major' is still measured against what is pinned.
+          python3 buildtools/upstream-version.py \
+              --channel "${{ inputs.channel || 'stable' }}" \
+              ${{ inputs.version && format('--upstream {0}', inputs.version) || '' }}
+
+      - name: What this run will do
+        id: plan
+        run: |
+          set -eu
+          if [ "${{ steps.detect.outputs.update }}" = "yes" ]; then
+              echo "target=${{ steps.detect.outputs.upstream }}" >> "$GITHUB_OUTPUT"
+              echo "proceed=yes" >> "$GITHUB_OUTPUT"
+              echo "This module pins ${{ steps.detect.outputs.pinned }}; the target is ${{ steps.detect.outputs.upstream }}."
+          else
+              echo "proceed=no" >> "$GITHUB_OUTPUT"
+              echo "Claude Code ${{ steps.detect.outputs.pinned }} is still what the channel points at."
+              echo "Nothing to do. This is the ordinary outcome of this job."
+          fi
+
+      # ------------------------------------------------------------------ apply
+
+      - name: Pin it
+        if: steps.plan.outputs.proceed == 'yes'
+        run: python3 buildtools/update.py "${{ steps.plan.outputs.target }}"
+
+      - name: Set up GraalVM
+        if: steps.plan.outputs.proceed == 'yes'
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          cache: 'maven'
+
+      # ------------------------------------------------------------------ verify
+
+      # Gates write STOP rather than failing: the run must still reach the pull-request step.
+      - name: Unit tests
+        if: steps.plan.outputs.proceed == 'yes'
+        run: |
+          ./mvnw -B -s settings.xml verify || echo "STOP=the unit suite failed" >> "$GITHUB_ENV"
+
+      # Nothing else enforces that the version and the digest agree; this asks upstream's manifest.
+      - name: The pin agrees everywhere it is written
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        run: |
+          python3 buildtools/check-pin.py || echo "STOP=the pinned version and digest disagree" >> "$GITHUB_ENV"
+
+      - name: Native binary and packages
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        run: |
+          ./mvnw -B -s settings.xml -Pnative,dist verify -DskipTests \
+              -Dagent.snapshot.run=${{ github.run_number }} \
+              || echo "STOP=the packages did not build" >> "$GITHUB_ENV"
+
+      # claude-code carries its version in its purl, so without --expect-moved this stops every time.
+      - name: What else changed in the shipped tree
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        run: |
+          python3 buildtools/compare-bills.py \
+              target/sokar-agent-claude.cdx.json \
+              https://fuinorg.jfrog.io/artifactory/sokar-dist-deb/pool/main/s/sokar-agent-claude/sokar-agent-claude.cdx.json \
+              --expect-moved claude-code \
+              || echo "STOP=third-party components or licenses changed" >> "$GITHUB_ENV"
+
+      - name: The major version moved
+        if: steps.plan.outputs.proceed == 'yes' && steps.detect.outputs.major == 'moved'
+        run: |
+          echo "STOP=the upstream major version moved" >> "$GITHUB_ENV"
+          echo "::warning::${{ steps.detect.outputs.pinned }} -> ${{ steps.plan.outputs.target }}"
+          echo "A major release changes flags, configuration or an extension API by definition."
+
+      - name: Install the Hetzner client
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        run: pip install --quiet hcloud
+
+      # One leg at a time: three repositories rent from one Hetzner project and nothing
+      # coordinates them. --candidate tests the packages built above, BEFORE anything is published.
+      - name: Acceptance - ubuntu
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SSH: ${{ secrets.SSH }}
+          SOKAR_CI_LEG: upd-ubuntu
+          SOKAR_E2E_OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          SOKAR_E2E_MODEL: z-ai/glm-5.3-flash
+          SOKAR_E2E_EXPECT_CLI: ${{ steps.plan.outputs.target }}
+        run: |
+          python3 buildtools/ci/remote-acceptance.py --os ubuntu --cucumber --candidate target \
+              || echo "STOP=acceptance failed on ubuntu" >> "$GITHUB_ENV"
+
+      - name: Acceptance - fedora
+        if: steps.plan.outputs.proceed == 'yes' && !env.STOP
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SSH: ${{ secrets.SSH }}
+          SOKAR_CI_LEG: upd-fedora
+          SOKAR_E2E_OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          SOKAR_E2E_MODEL: z-ai/glm-5.3-flash
+          SOKAR_E2E_EXPECT_CLI: ${{ steps.plan.outputs.target }}
+        run: |
+          python3 buildtools/ci/remote-acceptance.py --os fedora --cucumber --candidate target \
+              || echo "STOP=acceptance failed on fedora" >> "$GITHUB_ENV"
+
+      - name: Delete what this run created
+        if: always() && steps.plan.outputs.proceed == 'yes'
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SOKAR_CI_LEG: upd-ubuntu
+        run: python3 buildtools/ci/sweep.py --mine || true
+
+      - name: Delete what this run created - fedora leg
+        if: always() && steps.plan.outputs.proceed == 'yes'
+        env:
+          REMOTE_BUILD: ${{ secrets.REMOTE_BUILD }}
+          SOKAR_CI_LEG: upd-fedora
+        run: python3 buildtools/ci/sweep.py --mine || true
+
+      # ------------------------------------------------------------------ ask, or publish
+
+      - name: Open the pull request
+        id: request
+        if: always() && steps.plan.outputs.proceed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.plan.outputs.target }}
+          WAS: ${{ steps.detect.outputs.pinned }}
+        run: |
+          set -eu
+          git config user.name 'sokar-update'
+          git config user.email 'noreply@fuin.org'
+          if git diff --quiet; then
+              echo "nothing was written - there is no change to propose"
+              exit 0
+          fi
+          BRANCH="update/claude-code-$TARGET"
+          git checkout -b "$BRANCH"
+          git commit -am "Pin Claude Code $TARGET"
+          git push --force origin "$BRANCH"
+
+          {
+            echo "\`$WAS\` -> \`$TARGET\`, applied by \`buildtools/update.py\`: the"
+            echo "\`agent.cli.version\` property and the SHA-256 read from the manifest Anthropic"
+            echo "publishes for that release. Everything else naming the version is filtered from"
+            echo "the property and could not drift."
+            echo
+            if [ -n "${STOP:-}" ]; then
+                echo "**This is not ready to publish: $STOP.**"
+                echo "Automation is not allowed to decide this one - see the run log above."
+            else
+                echo "**Green.** Unit suite, the pin check against the published manifest, both"
+                echo "packages, an unchanged third-party component set, and the acceptance suites"
+                echo "on Ubuntu and Fedora against these packages rather than the published ones."
+            fi
+          } > /tmp/body.md
+          # A weekly job reaches the same version twice whenever the first attempt stopped.
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+              gh pr comment "$BRANCH" --body-file /tmp/body.md
+              echo "the request for $TARGET was already open - re-verified, and said so on it"
+          else
+              gh pr create --title "Pin Claude Code $TARGET" --body-file /tmp/body.md \
+                           --head "$BRANCH" --base main
+          fi
+          echo "opened=yes" >> "$GITHUB_OUTPUT"
+
+      # AUTO-MERGE NEEDS ITS OWN TOKEN: a push made with GITHUB_TOKEN triggers no build, so
+      # merging with it would update main, publish nothing, and report success.
+      - name: Merge, or say why not
+        if: always() && steps.request.outputs.opened == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.SOKAR_UPDATE_TOKEN || github.token }}
+          AUTO: ${{ vars.SOKAR_UPDATE_AUTO_MERGE }}
+          HAVE_TOKEN: ${{ secrets.SOKAR_UPDATE_TOKEN != '' }}
+          TARGET: ${{ steps.plan.outputs.target }}
+        run: |
+          set -eu
+          if [ -n "${STOP:-}" ]; then
+              echo "Not merging: $STOP."
+              echo "The branch is open for whoever decides it."
+          elif [ "$AUTO" != "true" ]; then
+              echo "Not merging: the repository variable SOKAR_UPDATE_AUTO_MERGE is '${AUTO:-unset}'."
+              echo "Everything passed. Merging the pull request publishes Claude Code $TARGET."
+              echo "Set the variable to 'true' when these runs have been watched enough."
+          elif [ "$HAVE_TOKEN" != "true" ]; then
+              echo "::error::SOKAR_UPDATE_AUTO_MERGE is on but the secret SOKAR_UPDATE_TOKEN is not set."
+              echo "Merging with the workflow's own token triggers no build, so nothing would be"
+              echo "published and the run would look successful. Refusing to merge."
+              exit 1
+          else
+              gh pr merge --merge --delete-branch "update/claude-code-$TARGET"
+              echo "Merged. The push to main builds and publishes Claude Code $TARGET."
+          fi
+
+      # Red means there is something to look at, and only that.
+      - name: Stop
+        if: always() && env.STOP
+        run: |
+          echo "::error::$STOP"
+          exit 1

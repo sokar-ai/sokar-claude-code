@@ -46,12 +46,89 @@ install:
 Anthropic publishes a per-version `manifest.json` carrying a SHA-256 per
 platform, at
 `https://downloads.claude.ai/claude-code-releases/<version>/manifest.json`, so
-this is verifiable rather than trusted. Bumping is a two-line change: the `agent.cli.version`
-property in `pom.xml` and the digest here. Until it is bumped, every image build
+this is verifiable rather than trusted. Until it is bumped, every image build
 installs the same bytes.
 
+**Two lines change, and neither is typed:**
+
+```
+buildtools/update.py 2.1.267
+```
+
+It reads the digest from that release's manifest, writes the `agent.cli.version`
+property in `pom.xml` and the `sha256` here, and leaves a diff to review. It
+refuses a version that does not exist, one published without a `linux-x64` build,
+and anything it cannot write in exactly one place. `--dry-run` says what it would do.
+
+Everything else naming the version - the definition's `install` section, the download
+URL, the description in both packages - is filtered from that one property and cannot
+drift from it. **The digest is the only thing that can**, so
+`buildtools/check-pin.py` reads the *filtered* definition from `target/classes` -
+the file the binary answers `describe` with - and checks it against the manifest
+Anthropic publishes. It runs on every push. Exit 1 says they disagree; exit 2 says
+the manifest could not be read, which is deliberately not the same answer.
+
+**The module's own version does not move.** While it is `1.0.0-SNAPSHOT`,
+`agent.snapshot.run` - the CI run number - already makes every build a strictly
+newer package than the last, which is what apt and dnf sort on; bumping to
+`1.0.1-SNAPSHOT` would invent a successor to a `1.0.0` that was never released.
+Once a release exists, a CLI move is a patch bump of the module, and `update.py`
+does that.
+
 `sokar agents --supply-chain` reports what is pinned, so "which version ran" is
-answerable from the installed adapter rather than from a build log.
+answerable from the installed adapter rather than from a build log. The acceptance
+suite asks the installed machine that question and compares the answer with the bill
+the package ships, so the two cannot drift apart unnoticed.
+
+## Following Claude Code without watching it
+
+`.github/workflows/update.yml` runs **once a week**, on Monday. It asks what
+upstream's `stable` channel points at and, if that is not what this module pins,
+does what a person would: `update.py`, rebuild, and prove the result on a real
+Ubuntu machine and a real Fedora one **before anything is published**.
+
+```
+https://downloads.claude.ai/claude-code-releases/stable   the channel this follows
+https://downloads.claude.ai/claude-code-releases/latest   every release, promoted or not
+```
+
+`stable` rather than `latest`, because the question "should a release have to be a
+certain age before it is picked up" already has an answer that is not ours to
+invent. The gap between the two is an observation, not a contract - nothing says
+`stable` cannot move twice in a day. `workflow_dispatch` takes a version to
+override both.
+
+**The point is the stopping.** The run refuses to publish when:
+
+| | |
+|---|---|
+| an acceptance suite failed | on either distribution |
+| the third-party component set changed | `compare-bills.py` against the published bill |
+| a license in the shipped tree changed | the same comparison |
+| the upstream **major** version moved | flags, configuration and extension APIs move with it |
+
+`--expect-moved claude-code` is what makes that comparison usable: the pinned CLI
+carries its version in its purl, so the thing being updated always reads as one
+component removed and another added. It is excused from the count and **its license
+is still compared**; anything that arrived beside it still stops the run.
+
+Whatever the outcome, the run opens a pull request - a green one says so, a stopped
+one says which condition stopped it. Merging is what publishes.
+
+**Auto-merge is off**, and the repository variable `SOKAR_UPDATE_AUTO_MERGE` turns it
+on. The run says which state it is in on every run rather than skipping a step in
+silence. Turning it on also needs the secret `SOKAR_UPDATE_TOKEN`, and that is not a
+preference: a push made with the workflow's own `GITHUB_TOKEN` triggers no further
+workflow, so merging with it would update `main`, publish nothing, and report success.
+The job refuses that rather than producing it.
+
+**How an update is proved before it is published.**
+`remote-acceptance.py --candidate target` installs the packages built in that run
+instead of the published ones, in the same command that installs `sokar` from
+Artifactory - so the repository, its signature, the index and `Depends: sokar` are
+all still exercised, and one package comes from a file. `SOKAR_E2E_EXPECT_CLI` makes
+the suite fail if the machine ended up on any other version, so a candidate that
+quietly did not install cannot pass.
 
 ## Publishing
 
