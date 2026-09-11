@@ -84,7 +84,7 @@ when there is none under `anthropic`, and a task says where to move it.
 Then:
 
 ```
-sokar task run
+sokar task start
 ```
 
 Both kinds run the same way: the vault already knows which it holds, and

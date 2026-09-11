@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The README starts a task with `sokar task start`, the name Sokar's lifecycle gives the verb that was `task run`.
 - The workflow rents, provisions and deletes its machines with Sokar's Java tooling instead of a copy of a Python script.
 - CI says which command it does not know, so tooling older than the caller reads as that rather than as a mistake in the workflow.
 
