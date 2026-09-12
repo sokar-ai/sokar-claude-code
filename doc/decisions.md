@@ -30,3 +30,17 @@ recorded in the bill of materials.
 **What reduces it meanwhile:** the version is pinned rather than floating, so an unreviewed release
 cannot arrive on its own; the digest is checked before installation in the image layer; and the
 update job opens a pull request rather than publishing by itself.
+
+## Why this agent needs container setup at all
+
+**Recorded 2026-09-12** when Sokar requirement A03 was retired into this repository. Both facts were
+measured while the agent was built, and both are the reason `ClaudeContainerSetup` exists rather
+than the agent simply being installed and started.
+
+- **It contacts the vendor directly before an interactive session**, ignoring the endpoint it was
+  given. So that host has to be reachable even when every model request goes through the broker,
+  which is why `claude.yaml` lists `platform.claude.com`, `claude.ai` and `statsig.anthropic.com`
+  in `allowed_domains` rather than relying on the provider's host alone.
+- **A fresh container has never been logged in**, so the first-run wizard must be answered for it
+  or the session stops waiting for input nobody will type. That is what `ClaudeFirstRun` writes,
+  and it is why the file is not a secret while the credential file beside it is.
