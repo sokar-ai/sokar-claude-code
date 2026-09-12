@@ -16,6 +16,8 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Security
 
+- The acceptance suite no longer puts the test credential on a command line; the pattern reaches `grep` on a file descriptor.
+- The check that no log holds the credential also searches with line breaks removed, so a value split across a newline is found rather than reported as absent.
 - The acceptance run passes the model name to the container as data rather than inside a shell command.
 - A credential kind this provider does not store is refused instead of being written as a subscription token.
 - The CI no longer installs the unpinned Hetzner Python client; nothing had used it since the Java machine tooling replaced it.
