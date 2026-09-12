@@ -6,6 +6,14 @@ somebody would otherwise ask "why is it like this?" and find only code.
 Accepted risks live here too. An accepted risk is not a forgotten one: it says what the exposure
 is, why it is not being removed, and what would change the answer.
 
+Newest first, and in the order they stand below. Each row links to its full text.
+
+| Date | What was decided |
+|---|---|
+| 2026-09-12 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) - nothing independent to verify the download against, and why that stays |
+| 2026-09-12 | [Why this agent needs container setup at all](#why-this-agent-needs-container-setup-at-all) - it calls the vendor before a session, and a fresh container has never logged in |
+| 2026-09-12 | [What was actually proven about brokering this agent](#what-was-actually-proven-about-brokering-this-agent) - which transport, which credential kind, against what |
+
 ## Accepted risk: the release binary and its digest share one trust root
 
 **Decided:** 2026-09-12, from the security review in `.codex-review.md` (C-04).
