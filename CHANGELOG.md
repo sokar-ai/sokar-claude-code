@@ -10,6 +10,12 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ## [Unreleased]
 
+### Security
+
+- The acceptance run passes the model name to the container as data rather than inside a shell command.
+- A credential kind this provider does not store is refused instead of being written as a subscription token.
+- The CI no longer installs the unpinned Hetzner Python client; nothing had used it since the Java machine tooling replaced it.
+
 ### Changed
 
 - The README starts a task with `sokar task start`, the name Sokar's lifecycle gives the verb that was `task run`.

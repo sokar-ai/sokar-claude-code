@@ -1,9 +1,11 @@
 package org.fuin.sokar.agent.impl.claude;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Map;
+import org.fuin.sokar.agent.api.AgentException;
 import org.fuin.sokar.agent.api.ContainerFile;
 import org.fuin.sokar.wire.Json;
 import org.junit.jupiter.api.Test;
@@ -124,5 +126,28 @@ class ClaudeContainerSetupTest {
         // looking exactly like a wrong one.
         assertThat(paths(withToken("   ", "oauth"))).doesNotContain(AnthropicCredentialFile.FILE);
         assertThat(paths(withToken(TOKEN, "oauth"))).contains(AnthropicCredentialFile.FILE);
+    }
+    @Test
+    void refusesACredentialKindThisProviderDoesNotStore() {
+
+        // Everything that was not an API key used to be written as a subscription token, so a new
+        // kind, a corrupted record or a typo produced a file in the wrong shape - and the agent
+        // then reported an authentication failure, which sends whoever reads it looking at the
+        // credential rather than at the mistake.
+        assertThatThrownBy(() -> files("subscription"))
+                .isInstanceOf(AgentException.class)
+                .hasMessageContaining("subscription")
+                .hasMessageContaining("api-key")
+                .hasMessageContaining("oauth");
+    }
+
+    @Test
+    void writesBothKindsThisProviderDoesStore() {
+
+        // The other half of the refusal above: the two known kinds still produce their file, so
+        // the guard cannot be satisfied by rejecting everything.
+        assertThat(named(AnthropicCredentialFile.FILE, "api-key").content()).contains("\"apiKey\"");
+        assertThat(named(AnthropicCredentialFile.FILE, "oauth").content())
+                .contains("\"claudeAiOauth\"");
     }
 }
