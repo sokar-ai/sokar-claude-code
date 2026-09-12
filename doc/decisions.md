@@ -44,3 +44,15 @@ than the agent simply being installed and started.
 - **A fresh container has never been logged in**, so the first-run wizard must be answered for it
   or the session stops waiting for input nobody will type. That is what `ClaudeFirstRun` writes,
   and it is why the file is not a secret while the credential file beside it is.
+
+## What was actually proven about brokering this agent
+
+**Recorded 2026-09-12** from Sokar requirement A03 before it was retired, because "verified" without
+the shape of the verification is a claim rather than a record.
+
+It honors **both** a base URL and a unix socket, with **either** credential kind - an API key or a
+subscription token - **including a token minted for the task** rather than the real credential. That
+is why `claude.yaml` sets `ANTHROPIC_UNIX_SOCKET` and `ANTHROPIC_BASE_URL` together: the socket
+selects the transport, and without the base URL the CLI falls back to its compiled-in endpoint. That
+fallback was measured - it resolved `api.anthropic.com` 184 times in one run and never touched the
+socket.
