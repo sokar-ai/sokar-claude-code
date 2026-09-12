@@ -165,6 +165,61 @@ class ClaudeAgentTest {
     }
 
     @Test
+    void showsEverySystemEventExceptTheStartupLine() {
+
+        // "system" is a category, not a severity: a warning, an error and a schema change after an
+        // upstream bump arrive under it. Only the startup line is noise, and it is matched by its
+        // subtype so that everything else stays visible.
+        final var formatter = agent.logFormatter();
+
+        final String error = "{\"type\":\"system\",\"subtype\":\"error\",\"message\":\"no credit\"}";
+        assertThat(formatter.format(error)).isEqualTo(error);
+
+        final String unknown = "{\"type\":\"system\",\"subtype\":\"something_new\"}";
+        assertThat(formatter.format(unknown)).isEqualTo(unknown);
+
+        final String noSubtype = "{\"type\":\"system\"}";
+        assertThat(formatter.format(noSubtype)).isEqualTo(noSubtype);
+    }
+
+    @Test
+    void marksARecognisedEventItCannotRead() {
+
+        // The alternative is a run that looks quieter than it was, exactly when somebody is
+        // reading the log to find out why it failed.
+        final var formatter = agent.logFormatter();
+
+        final String noContent = "{\"type\":\"assistant\",\"message\":{}}";
+        assertThat(formatter.format(noContent)).isEqualTo("[unreadable] " + noContent);
+
+        final String noMessage = "{\"type\":\"assistant\"}";
+        assertThat(formatter.format(noMessage)).isEqualTo("[unreadable] " + noMessage);
+
+        final String contentNotAList = "{\"type\":\"user\",\"message\":{\"content\":\"plain\"}}";
+        assertThat(formatter.format(contentNotAList)).isEqualTo("[unreadable] " + contentNotAList);
+
+        final String blockWithoutType = "{\"type\":\"assistant\",\"message\":{\"content\":[{\"x\":1}]}}";
+        assertThat(formatter.format(blockWithoutType)).isEqualTo("[unreadable] " + blockWithoutType);
+    }
+
+    @Test
+    void namesABlockShapeItDoesNotRender() {
+
+        // Named by what the block calls itself rather than by a guess at its contents: this
+        // formatter has been measured against a single-turn run, and a shape it has never seen
+        // should still leave a trace.
+        final var formatter = agent.logFormatter();
+
+        assertThat(formatter.format(
+                "{\"type\":\"user\",\"message\":{\"content\":[{\"type\":\"tool_result\"}]}}"))
+                .isEqualTo("> [tool_result]");
+        assertThat(formatter.format(
+                "{\"type\":\"assistant\",\"message\":{\"content\":"
+                        + "[{\"text\":\"Here: \"},{\"type\":\"thinking\"}]}}"))
+                .isEqualTo("Here: [thinking]");
+    }
+
+    @Test
     void installsAPinnedAndVerifiedBinary() {
 
         // Not 'curl | bash'. The version and digest are what make an image build reproducible

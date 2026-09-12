@@ -10,6 +10,10 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ## [Unreleased]
 
+### Changed
+
+- The log formatter drops only the startup line: every other system event, and any event it cannot read, now reaches the operator.
+
 ### Security
 
 - The acceptance run passes the model name to the container as data rather than inside a shell command.
