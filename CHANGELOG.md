@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The pinned version, the pom and the download URL are checked by a unit test on the filtered definition the package ships.
 - The log formatter drops only the startup line: every other system event, and any event it cannot read, now reaches the operator.
 
 ### Security

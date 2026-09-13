@@ -93,7 +93,7 @@ channel first, not in one copy.
   version before trusting it.
 - **The build is Java and Maven, and a file that is not says why it stays** (Sokar B53, 2026-09-13).
   What stays: `mvnw`, the Maven wrapper, which is how a pinned Maven arrives before any Java tooling
-  can run. The Python tools and `acceptance.sh` are on their way out - issues 011 to 014.
+  can run. The Python tools and `acceptance.sh` are on their way out - issues 012 to 014.
 
 ### How to get them
 

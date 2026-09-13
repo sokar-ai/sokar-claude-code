@@ -62,11 +62,12 @@ and anything it cannot write in exactly one place. `--dry-run` says what it woul
 
 Everything else naming the version - the definition's `install` section, the download
 URL, the description in both packages - is filtered from that one property and cannot
-drift from it. **The digest is the only thing that can**, so
-`buildtools/check-pin.py` reads the *filtered* definition from `target/classes` -
-the file the binary answers `describe` with - and checks it against the manifest
-Anthropic publishes. It runs on every push. Exit 1 says they disagree; exit 2 says
-the manifest could not be read, which is deliberately not the same answer.
+drift from it - `PinAgreementTest` reads the *filtered* definition from the classpath,
+the file the binary answers `describe` with, and fails the unit tests when the version,
+the pom and the download URL disagree. **The digest is the only thing that can drift**,
+and asking Anthropic's manifest needs the network, so `buildtools/check-pin.py` still
+checks it on every push. Exit 1 says they disagree; exit 2 says the manifest could not
+be read, which is deliberately not the same answer.
 
 **The module's own version does not move.** While it is `1.0.0-SNAPSHOT`,
 `agent.snapshot.run` - the CI run number - already makes every build a strictly
