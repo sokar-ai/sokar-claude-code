@@ -12,9 +12,29 @@ rather than guessed.
 
 | Date | What was decided |
 |---|---|
+| 2026-09-13 | [The API-key dialog is answered, because the key is the task's own](#the-api-key-dialog-is-answered-because-the-key-is-the-tasks-own) - reverses the refusal of 2026-09-09 |
 | 2026-09-12 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) - nothing independent to verify the download against, and why that stays |
 | 2026-09-04 | [Why this agent needs container setup at all](#why-this-agent-needs-container-setup-at-all) - it calls the vendor before a session, and a fresh container has never logged in |
 | 2026-09-03 | [What was actually proven about brokering this agent](#what-was-actually-proven-about-brokering-this-agent) - which transport, which credential kind, against what |
+
+## The API-key dialog is answered, because the key is the task's own
+
+**Decided 2026-09-13 by the operator, reversing 2026-09-09.**
+
+Started with a token in its environment, Claude Code asks whether to use *"a custom API key"* and
+recommends **No**. The refusal of 2026-09-09 held that answering it would decide billing on
+somebody's behalf. What was measured since changes the premise: the key shown is the **phantom
+token Sokar minted for this task**, not a payment credential. The billing decision was made earlier
+and elsewhere - when the operator put the real credential into the vault and chose a provider.
+
+**The recommended answer is the harmful one.** Taking *No* refuses the only credential the task
+has, in a dialog that describes it as suspicious. Unattended there is nobody to answer at all.
+
+**How it is answered, measured 2026-09-10 on Claude Code 2.1.267:** the last 20 characters of the
+token under `customApiKeyResponses.approved` in `.claude.json` remove the dialog completely.
+
+**What would change the answer:** the environment carrying a real payment credential instead of a
+task-scoped token. Then this would be a billing decision again, and it would be asked.
 
 ## Accepted risk: the release binary and its digest share one trust root
 
