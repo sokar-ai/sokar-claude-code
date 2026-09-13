@@ -8,7 +8,7 @@ identity, not sequence.
 | [008](008-Approve-The-Task-Token-At-First-Run.md) | open | — | The API-key dialog shows the task's own token and recommends refusing it; decided to answer it in the first-run file. | 0 |
 | [006](006-Which-Setting-Silences-The-Bypass-Warning.md) | open | — | Which of the two settings keys silences the bypass-mode warning. | 1 |
 | [007](007-Drop-The-Skip-Permissions-Flag.md) | blocked | 006 | Dropping the flag that raises the bypass-mode warning. | 0 |
-| [012](012-Replace-The-Build-Time-Python-Tools.md) | blocked | Sokar B53 | The Python tools every build runs, replaced by the tool Sokar publishes. | 0 |
+| [012](012-Replace-The-Build-Time-Python-Tools.md) | blocked | Sokar B53 | The Python tool every package build runs, replaced by the tool Sokar publishes. | 0 |
 | [013](013-Replace-The-Update-Pipeline-Python-Tools.md) | blocked | Sokar B53 | The Python tools the update job runs, and the per-push digest check, replaced by the tool Sokar publishes. | 0 |
 | [014](014-Acceptance-As-Kit-Scenarios.md) | blocked | Sokar B53 | The acceptance shell script turned into scenarios on acceptance-kit steps. | 1 |
 | [001](001-Pin-GitHub-Actions-By-Sha.md) | handed on | — | Every third-party GitHub Action runs from a mutable tag, beside the tokens that publish packages and open pull requests. | 1 |

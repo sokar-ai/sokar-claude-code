@@ -10,6 +10,10 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ## [Unreleased]
 
+### Removed
+
+- The changelog check in CI; requiring an entry returns later, built on logchange.
+
 ### Changed
 
 - The pinned version, the pom and the download URL are checked by a unit test on the filtered definition the package ships.

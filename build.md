@@ -101,10 +101,8 @@ year. The `(was ...)` it keeps is the version at the last release, not the last 
 Left to itself the changelog would have become a fifth place a bump has to be applied, which
 is the trap that made the version in a unit test worth removing.
 
-**Everything else is by hand, and `buildtools/check-changelog.py` fails a build that forgot.**
-Documentation, `LICENSE`, `.gitignore` and editor settings are exempt; source, `pom.xml` and
-the workflows are not. It compares two commits, so on a branch's first push there is nothing
-to compare against - it says so and passes rather than failing every new branch.
+**Everything else is by hand**, and since 2026-09-13 nothing checks for it; requiring an entry
+returns with Sokar B55 - see [`doc/decisions.md`](doc/decisions.md).
 
 ## Following Claude Code without watching it
 

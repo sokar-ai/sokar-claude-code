@@ -12,10 +12,26 @@ rather than guessed.
 
 | Date | What was decided |
 |---|---|
+| 2026-09-13 | [The changelog check is removed, not replaced](#the-changelog-check-is-removed-not-replaced) - requiring an entry returns with Sokar B55, on logchange |
 | 2026-09-13 | [The API-key dialog is answered, because the key is the task's own](#the-api-key-dialog-is-answered-because-the-key-is-the-tasks-own) - reverses the refusal of 2026-09-09 |
 | 2026-09-12 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) - nothing independent to verify the download against, and why that stays |
 | 2026-09-04 | [Why this agent needs container setup at all](#why-this-agent-needs-container-setup-at-all) - it calls the vendor before a session, and a fresh container has never logged in |
 | 2026-09-03 | [What was actually proven about brokering this agent](#what-was-actually-proven-about-brokering-this-agent) - which transport, which credential kind, against what |
+
+## The changelog check is removed, not replaced
+
+**Decided 2026-09-13 by the operator**, across all Sokar repositories.
+
+`buildtools/check-changelog.py` failed a push whose code change did not touch `CHANGELOG.md`. It is
+deleted, and nothing replaces it for now. Sokar is moving to logchange - one YAML file per change,
+and a generated `CHANGELOG.md` - and a check for a hand-kept file would have to be rebuilt the moment
+that reaches this repository. Requiring an entry returns as Sokar B55, proposed to logchange upstream
+first, which keeps the three lessons the script carried: a waiver answers for its own commit only,
+documentation is not exempt, and a range that cannot be compared fails.
+
+**Until then** the changelog is still written by hand in the same commit; only the enforcement is gone.
+
+**What would change it:** B55 landing, or logchange being adopted here.
 
 ## The API-key dialog is answered, because the key is the task's own
 
