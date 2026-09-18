@@ -41,6 +41,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Fixed
 
+- The build's index check follows Artifactory's redirect to cloud storage; it had read every package as not indexed.
 - A task started without a credential still gets `.claude.json` and `settings.json`; only the credential file waits for a token.
 - The update job stops instead of rolling back when upstream offers an older version than is pinned, and compares versions as numbers rather than text.
 - The changelog waiver answers for the commit it is written on, rather than for everything pushed with it.
