@@ -5,6 +5,7 @@ identity, not sequence.
 
 | # | Status | Blocked by | What it covers | Open questions |
 |---|---|---|---|---|
+| [016](016-Declare-What-The-Binary-Links-Against.md) | in progress | — | The packages declare the glibc and zlib the native binary needs. | 0 |
 | [008](008-Approve-The-Task-Token-At-First-Run.md) | open | — | The API-key dialog shows the task's own token and recommends refusing it; decided to answer it in the first-run file. | 0 |
 | [006](006-Which-Setting-Silences-The-Bypass-Warning.md) | open | — | Which of the two settings keys silences the bypass-mode warning. | 1 |
 | [007](007-Drop-The-Skip-Permissions-Flag.md) | blocked | 006 | Dropping the flag that raises the bypass-mode warning. | 0 |
