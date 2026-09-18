@@ -16,6 +16,7 @@ identity, not sequence.
 | [005](005-Declare-What-Waiting-Looks-Like.md) | blocked | Sokar B47 | Declaring what "waiting for a person" looks like in this agent's own output. | 1 |
 | [009](009-Fail-Acceptance-When-A-Release-Adds-A-Dialog.md) | blocked | Sokar B52 | The acceptance run fails when a release adds a first-run dialog. | 1 |
 | [010](010-Declare-Where-The-Session-Id-Is.md) | blocked | Sokar B46 | Declaring where this agent's session id is, so a task that comes back continues its conversation. | 1 |
+| [015](015-Refuse-The-Update-Host.md) | blocked | Sokar B61 | Refusing the host the CLI updates itself from, once refusals reach the resolver. | 0 |
 
 **Status** means: `open` - nobody is on it. `in progress` - somebody is. `handed on` - the work
 belongs to another repository and this row tracks what has to change here afterwards. `blocked` -
