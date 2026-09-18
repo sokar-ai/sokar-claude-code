@@ -52,6 +52,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Security
 
+- Claude Code no longer updates itself inside a task: the pinned version is the one that runs.
 - The acceptance suite no longer puts the test credential on a command line; the pattern reaches `grep` on a file descriptor.
 - The check that no log holds the credential also searches with line breaks removed, so a value split across a newline is found rather than reported as absent.
 - The acceptance run passes the model name to the container as data rather than inside a shell command.

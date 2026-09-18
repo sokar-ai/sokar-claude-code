@@ -12,11 +12,35 @@ rather than guessed.
 
 | Date | What was decided |
 |---|---|
+| 2026-09-18 | [The CLI does not update itself in a task](#the-cli-does-not-update-itself-in-a-task) - the pinned version is the one that runs |
 | 2026-09-13 | [The changelog check is removed, not replaced](#the-changelog-check-is-removed-not-replaced) - requiring an entry returns with Sokar B55, on logchange |
 | 2026-09-13 | [The API-key dialog is answered, because the key is the task's own](#the-api-key-dialog-is-answered-because-the-key-is-the-tasks-own) - reverses the refusal of 2026-09-09 |
 | 2026-09-12 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) - nothing independent to verify the download against, and why that stays |
 | 2026-09-04 | [Why this agent needs container setup at all](#why-this-agent-needs-container-setup-at-all) - it calls the vendor before a session, and a fresh container has never logged in |
 | 2026-09-03 | [What was actually proven about brokering this agent](#what-was-actually-proven-about-brokering-this-agent) - which transport, which credential kind, against what |
+
+## The CLI does not update itself in a task
+
+**Decided 2026-09-18 by the operator**, after the CLI was seen announcing an update inside a task.
+
+**Measured on Claude Code 2.1.267**, in a home laid out like the container's: within 90 seconds of
+starting, the CLI asked `downloads.claude.ai/claude-code-releases/latest`, downloaded 2.1.276 into
+`~/.local/share/claude/versions/` and showed *"Update installed · Restart to update"*. The next start
+would run a version nobody pinned and whose digest nobody compared.
+
+**How it is stopped:** `DISABLE_UPDATES=1` in the `env` of the container's `settings.json`. With it,
+the same run downloaded nothing, and `claude update` answered *"Updates are disabled by your
+administrator"*.
+
+- **Not `DISABLE_AUTOUPDATER`**, which stops only the background update. The agent has a shell and
+  could run `claude update` itself.
+- **Not `autoUpdates: false`**, which the CLI writes into `.claude.json` itself and then ignores for a
+  native install, because it also sets `autoUpdatesProtectedForNative`.
+- **In `settings.json` rather than the container's environment**, because that file is this
+  repository's and the environment is Sokar's. Measured to work from there.
+
+**What would change it:** nothing in the CLI's behavior. A new version comes through the weekly
+update job, which verifies it on both distributions before anything is published.
 
 ## The changelog check is removed, not replaced
 

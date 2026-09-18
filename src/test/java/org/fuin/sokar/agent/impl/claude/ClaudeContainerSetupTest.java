@@ -64,6 +64,16 @@ class ClaudeContainerSetupTest {
     }
 
     @Test
+    void keepsTheCliAtThePinnedVersion() {
+
+        // Measured on 2.1.267: without this the CLI downloaded 2.1.276 within 90 seconds and
+        // announced "Update installed". DISABLE_UPDATES also refuses 'claude update'.
+        final Map<?, ?> settings = parse(named(ClaudeSettings.FILE, "oauth"));
+
+        assertThat(((Map<?, ?>) settings.get("env")).get("DISABLE_UPDATES")).isEqualTo("1");
+    }
+
+    @Test
     void keepsTheSettingsReadableRatherThanSecret() {
 
         // Configuration, not a credential: nothing in it is worth hiding, and marking it
