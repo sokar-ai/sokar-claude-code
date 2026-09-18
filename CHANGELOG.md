@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Added
 
+- The packages provide `sokar-agent`, so the setup script and the daemon list this agent as one a person can choose.
 - The Claude Code adapter: definition, credential extraction, headless commands, log formatting.
 - `.deb` and `.rpm` packages, published to Artifactory from `main`.
 - Claude Code 2.1.236, pinned by version and SHA-256 against Anthropic's per-release manifest.
