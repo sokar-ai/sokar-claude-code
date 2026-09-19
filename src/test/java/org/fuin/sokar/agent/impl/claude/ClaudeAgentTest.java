@@ -22,6 +22,21 @@ class ClaudeAgentTest {
     private final Agent agent = new ClaudeAgent();
 
     @Test
+    void pointsItsLoginAtTheAuthenticationPage() throws IOException {
+
+        // Read as text: the published agent API has no accessor for the field yet, and a reader
+        // that knows nothing of a key ignores it, so nothing else would notice it going missing.
+        final String definition;
+        try (var in = ClaudeAgentTest.class.getClassLoader().getResourceAsStream("agent/claude.yaml")) {
+            assertThat(in).isNotNull();
+            definition = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        assertThat(agent.definition().loginArguments()).isEmpty();
+        assertThat(definition).contains("documentation: \"https://code.claude.com/docs/en/authentication\"");
+    }
+
+    @Test
     void isDiscoveredThroughTheServiceLoader() {
 
         // Nothing names ClaudeAgent for this to work: it is found through
