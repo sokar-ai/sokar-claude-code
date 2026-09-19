@@ -26,6 +26,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The acceptance suite makes its project by following a local repository and names it on every task start; its cleanup asks Sokar to remove the project instead of deleting Sokar's directories.
 - Every task the acceptance suite starts names its repository, which Sokar now requires.
 - The pinned version, the pom and the download URL are checked by a unit test on the filtered definition the package ships.
 - The log formatter drops only the startup line: every other system event, and any event it cannot read, now reaches the operator.

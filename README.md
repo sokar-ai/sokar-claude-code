@@ -84,11 +84,13 @@ when there is none under `anthropic`, and a task says where to move it.
 Then:
 
 ```
-sokar task start --repository <project>
+sokar task start --project <project> --repository <project>
 ```
 
-The repository is always named, even for a project that has only its own - the one
-named after the project, holding `project.yml`. Sokar never picks one for you.
+The project is one this machine follows (`sokar project follow <name> <url>`), named
+rather than pointed at. The repository is always named too, even for a project that
+has only its own - the one named after the project, holding `project.yml`. Sokar
+never picks one for you.
 
 Both kinds run the same way: the vault already knows which it holds, and
 `sokar vault list` shows it. `--credential-type` on a task overrides it.
