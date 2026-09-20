@@ -1,4 +1,4 @@
-# 013 — Replace the update pipeline's Python tools with Sokar's shared tool
+# CC13 — Replace the update pipeline's Python tools with Sokar's shared tool
 
 **Priority:** 1
 **Opened:** 2026-09-13
@@ -18,7 +18,7 @@ pinned digest is the one Anthropic publishes. `build.yml` runs the script **on e
 question, not only the update job - it is what catches a hand-made version bump that forgot the
 digest, which builds, tests and packages green and fails only at an image build.
 
-Whatever issue 004 settles about the update rules applies to the replacement unchanged.
+Whatever CC04 settles about the update rules applies to the replacement unchanged.
 
 ## What would close it
 

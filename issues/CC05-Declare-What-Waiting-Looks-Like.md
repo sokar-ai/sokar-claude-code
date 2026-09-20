@@ -1,4 +1,4 @@
-# 005 — Declare what waiting looks like for this agent
+# CC05 — Declare what waiting looks like for this agent
 
 **Priority:** 2
 **Opened:** 2026-09-12

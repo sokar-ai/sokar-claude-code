@@ -12,6 +12,8 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Added
 
+- The build refuses an issue number that names no issue, so a citation in prose cannot outlive the issue it points at.
+- The build refuses a link to an issue file from anywhere but the index, so a pointer cannot outlive the issue it names.
 - The login names Claude Code's authentication page, so an interface can show it beside the button that starts the login.
 - The packages provide `sokar-agent`, so the setup script and the daemon list this agent as one a person can choose.
 - The Claude Code adapter: definition, credential extraction, headless commands, log formatting.
@@ -27,6 +29,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- Issues carry their repository's letter: `CC07` rather than `007`, so a number says which set it belongs to.
 - The acceptance suite makes its project by following a local repository and names it on every task start; its cleanup asks Sokar to remove the project instead of deleting Sokar's directories.
 - Every task the acceptance suite starts names its repository, which Sokar now requires.
 - The pinned version, the pom and the download URL are checked by a unit test on the filtered definition the package ships.

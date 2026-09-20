@@ -1,4 +1,4 @@
-# 010 — Declare where this agent's session id is
+# CC10 — Declare where this agent's session id is
 
 **Priority:** 3
 **Opened:** 2026-09-13

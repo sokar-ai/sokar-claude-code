@@ -1,4 +1,4 @@
-# 009 — Fail the acceptance run when a release adds a first-run dialog
+# CC09 — Fail the acceptance run when a release adds a first-run dialog
 
 **Priority:** 4
 **Opened:** 2026-09-13

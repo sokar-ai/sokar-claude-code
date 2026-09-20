@@ -1,4 +1,4 @@
-# 012 — Replace the build-time Python tool with Sokar's shared tool
+# CC12 — Replace the build-time Python tool with Sokar's shared tool
 
 **Priority:** 1
 **Opened:** 2026-09-13

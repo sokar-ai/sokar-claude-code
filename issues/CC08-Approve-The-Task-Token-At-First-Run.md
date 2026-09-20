@@ -1,4 +1,4 @@
-# 008 — Approve the task's own token so the API-key dialog never asks
+# CC08 — Approve the task's own token so the API-key dialog never asks
 
 **Priority:** 1
 **Opened:** 2026-09-13

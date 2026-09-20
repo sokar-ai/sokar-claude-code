@@ -1,4 +1,4 @@
-# 015 — Refuse the update host once refusals are enforced
+# CC15 — Refuse the update host once refusals are enforced
 
 **Priority:** 3
 **Opened:** 2026-09-18

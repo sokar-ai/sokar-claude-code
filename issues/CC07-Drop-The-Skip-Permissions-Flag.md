@@ -1,4 +1,4 @@
-# 007 — Drop `--dangerously-skip-permissions`
+# CC07 — Drop `--dangerously-skip-permissions`
 
 **Priority:** 3
 **Opened:** 2026-09-13

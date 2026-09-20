@@ -1,4 +1,4 @@
-# 006 — Find out which setting silences the bypass-mode warning
+# CC06 — Find out which setting silences the bypass-mode warning
 
 **Priority:** 2
 **Opened:** 2026-09-13
@@ -12,7 +12,7 @@ warning does not appear (measured 2026-09-10). Those runs cannot say which key d
 
 ## Why it matters
 
-Issue 007 removes the flag that raises the warning. That removal should rest on knowing which key
+CC07 removes the flag that raises the warning. That removal should rest on knowing which key
 holds the mode and which silences the dialog, not on both happening to be present. A key that turns
 out to do nothing is a line nobody can later explain.
 
