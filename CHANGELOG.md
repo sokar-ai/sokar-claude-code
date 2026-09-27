@@ -38,7 +38,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 - The README starts a task with `sokar task start`, the name Sokar's lifecycle gives the verb that was `task run`.
 - The workflow rents, provisions and deletes its machines with Sokar's Java tooling instead of a copy of a Python script.
 - CI says which command it does not know, so tooling older than the caller reads as that rather than as a mistake in the workflow.
-- Claude Code pinned to 2.1.267 (was 2.1.236).
+- Claude Code pinned to 2.1.274 (was 2.1.236).
 - A change that ships nothing observable can say `[no changelog]` in a commit message.
 - The installed version is no longer asserted in a unit test, where every bump had to be applied.
 

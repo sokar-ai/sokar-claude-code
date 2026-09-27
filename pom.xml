@@ -49,7 +49,7 @@
         <!-- The Claude Code version this agent installs. Filtered into claude.yaml and carried
              in the package description, so 'dpkg -s' and 'rpm -qi' answer which CLI an image
              build installs. Deliberately not part of the package version. -->
-        <agent.cli.version>2.1.267</agent.cli.version>
+        <agent.cli.version>2.1.274</agent.cli.version>
 
         <!-- The published contract this builds against. Nothing else of Sokar's is on the
              classpath, and no checkout of the sokar repository is needed to build here. -->
