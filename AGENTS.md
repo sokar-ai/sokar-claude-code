@@ -202,5 +202,14 @@ artifacts, never on Sokar's implementation.
 - `./mvnw -o -B -s settings.xml test` is the fast gate; `verify` adds the acceptance module.
 - `buildtools/` holds the release tooling: the pin check, the update job, the bill comparison, the
   acceptance script that runs against a rented machine.
+- **No test may name the pinned version.** The update job bumps `agent.cli.version`, filtering
+  carries it into the definition, and a literal in a test fails every bump - measured 2026-09-21,
+  where `expected 18.1.13 but was 18.2.7` stopped the run in `sokar-omp`. Which version is pinned is
+  `PinAgreementTest`'s question, against the pom.
+- **A gate that stops can only reach a person through the pull request**, and `gh pr create` with
+  `${{ github.token }}` is refused unless the organization allows Actions to create pull requests -
+  `GraphQL: GitHub Actions is not permitted to create or approve pull requests`, both update runs of
+  2026-09-21. `sokar-pi`'s licence gate fired correctly and its reason died in the runner. Ways out:
+  the setting, or the request step prefers `secrets.SOKAR_UPDATE_TOKEN` as the merge step does.
 - The agent's own facts live in `src/main/resources/agent/claude.yaml`. Nothing outside `agents/`
   in Sokar knows this agent's wording, and nothing here hardcodes Sokar's.
