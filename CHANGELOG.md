@@ -29,6 +29,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The pull request carries the third-party comparison itself, with each component's licence, rather than leaving it in the run log.
 - Issues carry their repository's letter: `CC07` rather than `007`, so a number says which set it belongs to.
 - The acceptance suite makes its project by following a local repository and names it on every task start; its cleanup asks Sokar to remove the project instead of deleting Sokar's directories.
 - Every task the acceptance suite starts names its repository, which Sokar now requires.

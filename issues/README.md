@@ -17,6 +17,7 @@ identity, not sequence.
 | [CC09](CC09-Fail-Acceptance-When-A-Release-Adds-A-Dialog.md) | blocked | Sokar B52 | The acceptance run fails when a release adds a first-run dialog. | 1 |
 | [CC10](CC10-Declare-Where-The-Session-Id-Is.md) | blocked | Sokar B46 | Declaring where this agent's session id is, so a task that comes back continues its conversation. | 1 |
 | [CC15](CC15-Refuse-The-Update-Host.md) | blocked | Sokar B61 | Refusing the host the CLI updates itself from, once refusals reach the resolver. | 0 |
+| [CC17](CC17-Record-The-Fetched-Binary-In-The-Bill.md) | open | — | The bill of materials names five Java libraries and not the binary this package installs, so the licence gate compares nothing that an upstream release can change. | 1 |
 
 **Status** means: `open` - nobody is on it. `in progress` - somebody is. `handed on` - the work
 belongs to another repository and this row tracks what has to change here afterwards. `blocked` -
