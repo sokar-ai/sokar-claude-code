@@ -4,6 +4,8 @@ Runs [Claude Code](https://github.com/anthropics/claude-code) inside
 [Sokar](https://github.com/sokar-ai/sokar): in a hardened container, reaching only what it needs,
 with your credential kept on the machine and its work waiting for your review.
 
+Its documentation: **<https://sokar-ai.github.io/claude/>**.
+
 ## Install
 
 Once Sokar's package repository is set up, as Sokar's
