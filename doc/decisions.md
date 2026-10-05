@@ -166,8 +166,7 @@ written. The alternative - refusing to ship the agent at all - removes a product
 risk.
 
 **What would change it:** a signed release, a provenance attestation, or a digest published
-through a channel with a different operator. Any of those should be verified in the update job and
-recorded in the bill of materials.
+through a channel with a different operator.
 
 **What reduces it:** the version is pinned rather than floating, so an unreviewed release cannot
 arrive on its own; the digest is checked before installation in the image layer; and the update job

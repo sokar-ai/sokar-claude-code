@@ -268,6 +268,9 @@ what is one adapter's alone stays outside.
 
 - **Issues here are `CCnn-Short-Title.md`, with the prefix `CC`.** `IssueCitationTest` keys on the
   shape `[A-Z]{1,2}\d{2}` and fails on a number that names no open issue.
+- **Once the vendor publishes a signature, a provenance attestation or a digest through a channel
+  with a different operator, verify it in the update job and record it in the bill of materials.**
+  Why the CLI is taken on its digest alone until then is in `doc/decisions.md`.
 
 ## What this repository is
 
