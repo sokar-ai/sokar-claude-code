@@ -1,0 +1,640 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.fuin</groupId>
+        <artifactId>pom</artifactId>
+        <version>2.0.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>org.fuin.sokar</groupId>
+    <artifactId>sokar-agent-claude</artifactId>
+    <version>0.4.0</version>
+    <name>Sokar Agent Claude Code</name>
+    <description>Sokar agent for Claude Code</description>
+
+    <url>https://github.com/sokar-ai/sokar-claude-code/</url>
+
+    <scm child.scm.url.inherit.append.path="false"
+         child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false">
+        <url>https://github.com/sokar-ai/sokar-claude-code/</url>
+        <connection>scm:git:git://github.com/sokar-ai/sokar-claude-code.git</connection>
+        <developerConnection>scm:git:git@github.com:sokar-ai/sokar-claude-code.git</developerConnection>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/sokar-ai/sokar-claude-code/issues</url>
+    </issueManagement>
+
+    <properties>
+        <java.release.version>25</java.release.version>
+
+        <!-- What distinguishes one snapshot package from the next.
+             Without it every build of main produced the same 0.4.0~SNAPSHOT, so 'apt upgrade'
+             saw nothing to do and whoever installed yesterday stayed on it until they purged.
+             CI passes the run number; a local build is 0, which sorts below every CI build and
+             above the old flat ~SNAPSHOT, so an existing install upgrades cleanly.
+             Kept identical in shape to sokar's own packages, so both sort the same way in one
+             repository. The counters are per repository and are NOT shared. -->
+        <agent.snapshot.run>0</agent.snapshot.run>
+
+        <!-- The Claude Code version this agent installs. Filtered into claude.yaml and carried
+             in the package description, so 'dpkg -s' and 'rpm -qi' answer which CLI an image
+             build installs. Deliberately not part of the package version. -->
+        <agent.cli.version>2.1.267</agent.cli.version>
+
+        <!-- What this agent's update differs in, read by Sokar's release tool beside the pin. -->
+        <sokar.release.agent>Claude Code</sokar.release.agent>
+        <sokar.release.definition>src/main/resources/agent/claude.yaml</sokar.release.definition>
+        <sokar.release.upstream>pointer https://downloads.claude.ai/claude-code-releases</sokar.release.upstream>
+        <sokar.release.channel>stable</sokar.release.channel>
+        <sokar.release.digest>manifest https://downloads.claude.ai/claude-code-releases/{version}/manifest.json linux-x64</sokar.release.digest>
+        <sokar.release.license>npm https://registry.npmjs.org/@anthropic-ai%2fclaude-code</sokar.release.license>
+        <!-- The operator's rule: a release is taken once it is three days old. -->
+        <sokar.release.min-age>3d</sokar.release.min-age>
+
+        <!-- The published contract this builds against. Nothing else of Sokar's is on the
+             classpath, and no checkout of the sokar repository is needed to build here. -->
+        <sokar.version>0.4.0</sokar.version>
+
+        <fuin-bom.version>1.0.2</fuin-bom.version>
+        <build-helper.version>3.6.1</build-helper.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
+        <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+        <jdeb.version>1.14</jdeb.version>
+        <rpm.version>1.13.0</rpm.version>
+        <native-maven-plugin.version>1.1.11</native-maven-plugin.version>
+        <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
+        <error-prone.version>2.50.0</error-prone.version>
+        <nullaway.version>0.14.2</nullaway.version>
+
+        <agent.install.dir>/usr/libexec/sokar/agents</agent.install.dir>
+        <sbom.install.dir>/usr/share/sokar/sbom</sbom.install.dir>
+        <!-- RPMs are unsigned everywhere for now, like Sokar's own; what is signed is the repository
+             metadata. -->
+        <rpm.sign.skip>true</rpm.sign.skip>
+
+        <!-- The highest symbol versions the native binary needs, measured with readelf.
+             Both packages declare them, and NativeLinkageCheck fails the dist build
+             when the binary needs more. Installed with them on Ubuntu and Fedora by the
+             acceptance run of the same day. -->
+        <package.glibc.floor>2.34</package.glibc.floor>
+        <package.zlib.floor>1.2.2</package.zlib.floor>
+
+        <!-- The agent is a binary, not a library. Nobody resolves this from Maven. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencyManagement>
+
+        <dependencies>
+
+            <!-- First, so its versions win: the three Sokar artifacts, and JUnit as ONE set
+                 with the platform Cucumber is built against. Imported before the org BOM on
+                 purpose - that one pins a Jupiter beside a suite engine from a different
+                 platform, and through the acceptance kit the mixed set reaches this build and
+                 the suite engine dies on a missing method. -->
+
+            <dependency>
+                <groupId>org.fuin.sokar</groupId>
+                <artifactId>sokar-bom</artifactId>
+                <version>${sokar.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Where jspecify, junit and assertj get their versions, as in the sokar
+                 repository. Also pins Byte Buddy to a release that accepts JDK 25 class files. -->
+
+            <dependency>
+                <groupId>org.fuin</groupId>
+                <artifactId>bom</artifactId>
+                <version>${fuin-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+        </dependencies>
+
+    </dependencyManagement>
+
+    <dependencies>
+
+        <!-- compile: the agent contract, and nothing else. Never another agent. -->
+
+        <dependency>
+            <groupId>org.fuin.sokar</groupId>
+            <artifactId>sokar-agent-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.fuin.sokar</groupId>
+            <artifactId>sokar-wire</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+
+        <!-- test: versions come from the org.fuin parent, as they do in the sokar repository -->
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+
+        <plugins>
+
+            <!-- @NullMarked is a promise until something checks it: NullAway makes a broken
+                 nullness contract a compile error. Only the main compile - tests pass null on
+                 purpose. Error Prone runs only NullAway, so it adds nothing else to fix.
+                 Declaring processor paths turns off discovery from the classpath; nothing here
+                 relies on it, the service file is written by hand. Needs .mvn/jvm.config, which
+                 opens javac's internals to Error Prone. -->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>--should-stop=ifError=FLOW</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked=true</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${error-prone.version}</version>
+                                </path>
+                                <path>
+                                    <groupId>com.uber.nullaway</groupId>
+                                    <artifactId>nullaway</artifactId>
+                                    <version>${nullaway.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- The bill of what this package carries. skipNotDeployed is off because nothing
+                 here is deployed to Maven - the package is what ships. -->
+
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>cyclonedx</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                        <configuration>
+                            <projectType>application</projectType>
+                            <schemaVersion>1.6</schemaVersion>
+                            <outputFormat>json</outputFormat>
+                            <outputName>${project.artifactId}.cdx</outputName>
+                            <skipNotDeployed>false</skipNotDeployed>
+                            <skipAttach>true</skipAttach>
+                            <includeTestScope>false</includeTestScope>
+                            <includeProvidedScope>false</includeProvidedScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>agent/*.yaml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>agent/*.yaml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+    </build>
+
+    <profiles>
+
+        <!-- Requires GraalVM as JAVA_HOME. Produces target/sokar-agent-claude, which is
+             installed into the agent directory and started by Sokar on demand. -->
+
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-sokar-agent-claude</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <configuration>
+                                    <imageName>sokar-agent-claude</imageName>
+                                    <mainClass>org.fuin.sokar.agent.impl.claude.ClaudeAgent</mainClass>
+                                    <!-- The x86-64 baseline, by the operator's decision: native-image's default is v3,
+                                         and a CPU or VM without AVX2 would install the package and not start it.
+                                         NativeLinkageCheck holds the binary to exactly the baseline. -->
+                                    <buildArgs>
+                                        <buildArg>-march=x86-64</buildArg>
+                                    </buildArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Requires -Pnative to have produced the binary: mvn -Pnative,dist verify -->
+
+        <profile>
+            <id>dist</id>
+            <build>
+                <plugins>
+
+                    <!-- The pinned CLI is not in this package; the image build fetches it.
+                         Added after the bill is generated, from the filtered definition, so the
+                         version and digest recorded are the ones an image will actually use. -->
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>record-the-fetched-cli</id>
+                                <!-- 'package', not 'prepare-package': the bill does not exist
+                                     until cyclonedx has run, and that runs at package. A
+                                     profile's plugins run after the main build's in the same
+                                     phase, which is what puts this second. -->
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${java.home}/bin/java</executable>
+                                    <!-- Puts sokar-release, a plugin dependency, on the classpath
+                                         below, so it never becomes a dependency of the package. -->
+                                    <includePluginDependencies>true</includePluginDependencies>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath/>
+                                        <argument>org.fuin.sokar.release.Main</argument>
+                                        <argument>add-fetched-cli</argument>
+                                        <argument>${project.build.directory}/${project.artifactId}.cdx.json</argument>
+                                        <argument>${project.build.outputDirectory}/agent/claude.yaml</argument>
+                                        <argument>claude-code</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.fuin.sokar</groupId>
+                                <artifactId>sokar-release</artifactId>
+                                <version>${sokar.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>${build-helper.version}</version>
+                        <executions>
+                            <execution>
+                                <id>package-revision</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>regex-property</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Debian and RPM sort '~' below everything, so
+                                         0.4.0~snapshot.N is older than 0.4.0. Left as
+                                         '-SNAPSHOT' it sorts ABOVE the release and apt refuses
+                                         the upgrade.
+                                         The run number is what makes one snapshot newer than the
+                                         last: a flat ~SNAPSHOT is the same version every build,
+                                         so apt has nothing to upgrade to. -->
+                                    <name>agent.package.version</name>
+                                    <value>${project.version}</value>
+                                    <regex>-SNAPSHOT$</regex>
+                                    <replacement>~snapshot.${agent.snapshot.run}</replacement>
+                                    <failIfNoMatch>false</failIfNoMatch>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Before the packages, and declared first because both bind to verify: the
+                         binary is checked against what they declare before anything is packed. -->
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven-failsafe-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>native-linkage</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <includes>
+                                        <include>**/NativeLinkageCheck.java</include>
+                                    </includes>
+                                    <systemPropertyVariables>
+                                        <sokar.native.binary>${project.build.directory}/${project.artifactId}</sokar.native.binary>
+                                        <package.glibc.floor>${package.glibc.floor}</package.glibc.floor>
+                                        <package.zlib.floor>${package.zlib.floor}</package.zlib.floor>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.vafer</groupId>
+                        <artifactId>jdeb</artifactId>
+                        <version>${jdeb.version}</version>
+                        <executions>
+                            <execution>
+                                <id>deb</id>
+                                <!-- Not 'package': native-image binds there too. -->
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>jdeb</goal>
+                                </goals>
+                                <configuration>
+                                    <name>${project.artifactId}</name>
+                                    <deb>${project.build.directory}/${project.artifactId}_${agent.package.version}_amd64.deb</deb>
+                                    <controlDir>${project.basedir}/src/deb/control</controlDir>
+                                    <dataSet>
+                                        <data>
+                                            <src>${project.build.directory}/${project.artifactId}</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${agent.install.dir}</prefix>
+                                                <filemode>755</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.directory}/${project.artifactId}.cdx.json</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${sbom.install.dir}</prefix>
+                                                <filemode>644</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                        <!-- Debian Policy 12.5: every binary package ships one. -->
+                                        <data>
+                                            <src>${project.basedir}/src/deb/copyright/copyright</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/share/doc/${project.artifactId}</prefix>
+                                                <filemode>644</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                    </dataSet>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>de.dentrassi.maven</groupId>
+                        <artifactId>rpm</artifactId>
+                        <version>${rpm.version}</version>
+                        <executions>
+                            <execution>
+                                <id>rpm</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>rpm</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <packageName>${project.artifactId}</packageName>
+                            <version>${agent.package.version}</version>
+                            <snapshotVersion>${agent.package.version}</snapshotVersion>
+                            <release>1</release>
+                            <summary>${project.description}</summary>
+                            <description>${project.description} ${agent.cli.version}. Installs into /usr/libexec/sokar/agents, where the sokar binary scans for agents.</description>
+                            <!-- Without this a snapshot build gets a timestamp release and the
+                                 rpm and the deb disagree about what version they are. -->
+                            <forceRelease>true</forceRelease>
+                            <architecture>x86_64</architecture>
+                            <group>Applications/System</group>
+                            <license>GPL-3.0-or-later</license>
+                            <packager>fuin.org</packager>
+                            <requires>
+                                <require>sokar</require>
+                                <!-- The names rpmbuild itself generates for these libraries. -->
+                                <require>libc.so.6(GLIBC_${package.glibc.floor})(64bit)</require>
+                                <require>libz.so.1(ZLIB_${package.zlib.floor})(64bit)</require>
+                            </requires>
+                            <!-- As the deb: what the setup script lists as a choosable agent. -->
+                            <provides>
+                                <provide>sokar-agent</provide>
+                            </provides>
+                            <signature>
+                                <skip>${rpm.sign.skip}</skip>
+                            </signature>
+                            <entries>
+                                <entry>
+                                    <name>${agent.install.dir}/${project.artifactId}</name>
+                                    <file>${project.build.directory}/${project.artifactId}</file>
+                                    <mode>0755</mode>
+                                    <user>root</user>
+                                    <group>root</group>
+                                </entry>
+                                <entry>
+                                    <name>${sbom.install.dir}/${project.artifactId}.cdx.json</name>
+                                    <file>${project.build.directory}/${project.artifactId}.cdx.json</file>
+                                    <mode>0644</mode>
+                                    <user>root</user>
+                                    <group>root</group>
+                                </entry>
+                                <!-- 'license' marks it %license, so 'rpm -qL' answers. -->
+                                <entry>
+                                    <name>/usr/share/licenses/${project.artifactId}/LICENSE</name>
+                                    <file>${project.basedir}/LICENSE</file>
+                                    <mode>0644</mode>
+                                    <user>root</user>
+                                    <group>root</group>
+                                    <license>true</license>
+                                </entry>
+                            </entries>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+
+        <!-- The acceptance suite: what a person does at a terminal with this agent, run against a
+             real machine through Sokar's published kit. Off unless a host is named - then the
+             ordinary build neither resolves the kit nor compiles src/acceptance, so main stays
+             green whatever Central holds. Naming a host is what turns it on:
+
+               ./mvnw -s settings.xml verify -Dsokar.acceptance.host=<machine> \
+                   -Dsokar.acceptance.user=acceptance -Dsokar.acceptance.key=<key>
+
+             Its own source root rather than src/test: these are integration tests that rent a
+             machine, and a unit test that cannot run without one would make 'mvn test' mean
+             something different here than everywhere else. -->
+
+        <!-- The machine tooling, for the workflow step that deletes what a run created. Its
+             own profile so an ordinary build neither downloads it nor puts it on a classpath:
+             nothing in this module compiles against it, and CI asks for it by name. -->
+
+        <profile>
+            <id>ci-tools</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.fuin.sokar</groupId>
+                    <artifactId>sokar-machines</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.fuin.sokar</groupId>
+                    <artifactId>sokar-release</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>acceptance</id>
+            <activation>
+                <property><name>sokar.acceptance.host</name></property>
+            </activation>
+            <properties>
+                <sokar.acceptance.user>acceptance</sokar.acceptance.user>
+                <sokar.acceptance.key>${user.home}/.ssh/id_ed25519</sokar.acceptance.key>
+                <sokar.acceptance.as/>
+            </properties>
+            <dependencies>
+                <!-- test: brings Cucumber, the JUnit platform, the ssh client and AssertJ. The
+                     one thing of Sokar's an agent may depend on in test scope beside the API. -->
+                <dependency>
+                    <groupId>org.fuin.sokar</groupId>
+                    <artifactId>sokar-acceptance-kit</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>${build-helper.version}</version>
+                        <executions>
+                            <execution>
+                                <id>acceptance-sources</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                    <goal>add-test-resource</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/acceptance/java</source>
+                                    </sources>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/acceptance/resources</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven-failsafe-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sokar.acceptance.host>${sokar.acceptance.host}</sokar.acceptance.host>
+                                <sokar.acceptance.user>${sokar.acceptance.user}</sokar.acceptance.user>
+                                <sokar.acceptance.as>${sokar.acceptance.as}</sokar.acceptance.as>
+                                <sokar.acceptance.key>${sokar.acceptance.key}</sokar.acceptance.key>
+                                <!-- Repository-relative, so an annotation lands on the feature file. -->
+                                <sokar.acceptance.features>src/acceptance/resources/</sokar.acceptance.features>
+                                <cucumber.plugin>pretty, html:target/acceptance.html, json:target/acceptance.json, org.fuin.sokar.acceptance.GitHubReport</cucumber.plugin>
+                            </systemPropertyVariables>
+                            <!-- A key OpenRouter does not know, for the scenario whose provider refuses it. -->
+                            <environmentVariables>
+                                <SOKAR_E2E_REFUSED_KEY>sokar-acceptance-not-a-key</SOKAR_E2E_REFUSED_KEY>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
+</project>
