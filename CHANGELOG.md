@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Headings name this package's version; Claude Code's version is what the package installs and
 appears as an entry rather than a heading. One sentence per change - `git log` has the detail.
 
+## [Unreleased]
+
+### Changed
+
+- The release tooling is `sokar-release` 0.4.1, whose shared checks of issue citations and the documentation chapter replace this repository's own tests.
+
 ## [0.4.0]
 
 - Initial public version.
