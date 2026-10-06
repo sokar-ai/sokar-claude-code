@@ -1,5 +1,10 @@
 # sokar-claude-code
 
+<img src="doc/images/early-bird.svg" width="640" alt="Early bird - work in progress">
+
+> **Early bird - work in progress.** Sokar is not stable yet: until release 1.0.0, its code, commands
+> and file formats can change without notice.
+
 Runs [Claude Code](https://github.com/anthropics/claude-code) inside
 [Sokar](https://github.com/sokar-ai/sokar): in a hardened container, reaching only what it needs,
 with your credential kept on the machine and its work waiting for your review.
