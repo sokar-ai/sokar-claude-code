@@ -28,7 +28,7 @@ repository is built.
 | [The release tooling is Sokar's, configured from the pom](#the-release-tooling-is-sokars-configured-from-the-pom) | data beside the pin, never a copy of code |
 | [Actions run from a commit, and Dependabot moves them](#actions-run-from-a-commit-and-dependabot-moves-them) | every `uses:` by commit, GraalVM by Sokar's pin, checked by `check-actions` |
 | [What an update takes, and when](#what-an-update-takes-and-when) | three days old and still the newest, verified on rented machines before the pull request |
-| [NullAway is configured in this pom, not in the shared parent](#nullaway-is-configured-in-this-pom-not-in-the-shared-parent) | the parent is not this repository's to change |
+| [NullAway comes from `sokar-parent`](#nullaway-comes-from-sokar-parent) | one compiler configuration for every repository; `.mvn/jvm.config` stays here |
 | [No check requires a changelog entry](#no-check-requires-a-changelog-entry) | requiring one belongs to Sokar's changelog check, on logchange |
 
 ## Why this agent needs container setup at all
@@ -299,19 +299,16 @@ machine tooling, under the same rule, once for every repository.
 **What would change the answer:** a release that cannot wait three days. Dispatching the job with the
 version named takes it at once - that is the way round the rule, not a change to it.
 
-## NullAway is configured in this pom, not in the shared parent
+## NullAway comes from `sokar-parent`
 
-`org.fuin:pom` would make it true in every repository at once, but it is not this repository's to
-change, and waiting for it would leave the `@NullMarked` promise unchecked for as long as that took.
-So the compiler configuration, the two versions and `.mvn/jvm.config` are here, identical in
-`sokar-pi` and `sokar-omp`. Three copies of one block is the shape `AGENTS.md` warns about; it is
-accepted because the parent is the one place that removes it, and **moving it there is the answer
-the day the parent takes it** - then all three copies go in the same change.
+The compiler configuration that runs NullAway - Error Prone with only NullAway, `OnlyNullMarked`, the
+two processor paths - is `sokar-parent`'s, managed for every Sokar repository, so this pom declares no
+compiler plugin. Only the `default-compile` execution runs it: tests pass `null` on purpose, and Error
+Prone never sees them.
 
-Only the `default-compile` execution runs it: tests pass `null` on purpose, and Error Prone never
-sees them. `.mvn/jvm.config` exists because Error Prone runs inside javac in Maven's own JVM, and
-from JDK 16 on that JVM refuses it the compiler's internals - measured on JDK 25, an
-`IllegalAccessError` on `com.sun.tools.javac.api` before a single file is checked.
+What stays here is `.mvn/jvm.config`: Error Prone runs inside javac in Maven's own JVM, and from JDK 16
+on that JVM refuses it the compiler's internals - measured on JDK 25, an `IllegalAccessError` on
+`com.sun.tools.javac.api` before a single file is checked.
 
 ## No check requires a changelog entry
 

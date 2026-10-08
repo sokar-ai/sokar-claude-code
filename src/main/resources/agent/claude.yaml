@@ -43,10 +43,10 @@ login:
 sandboxed:
   arguments: []
 
-# How the agent is told how its task's mailbox works. Sokar writes the instructions to a
-# read-only file in a task that has a mailbox and puts these arguments behind the 'sandboxed' ones, '{file}'
-# standing for its path, on every start, attended or not, a resumed one included. A task without a
-# mailbox gets neither. 'claude --help' on 2.1.267 names --append-system-prompt <text> and --append-system-prompt-file <path>; the file one
+# How the agent is told what Sokar puts in its task - the mailbox where there is one, /sokar/files and
+# what arrives there. Sokar writes this guide to a read-only file in every task Sokar makes and puts these
+# arguments behind the 'sandboxed' ones, '{file}' standing for its path, on every start, attended or not, a resumed
+# one included. 'claude --help' on 2.1.267 names --append-system-prompt <text> and --append-system-prompt-file <path>; the file one
 # is taken, so the text is read from the task and never rides on the command line.
 instructions:
   arguments: ["--append-system-prompt-file", "{file}"]
