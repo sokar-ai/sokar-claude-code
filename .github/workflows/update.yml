@@ -1,5 +1,6 @@
 # Follows Claude Code, so nobody has to.
-name: Update
+name: Agent version update
+run-name: "${{ github.workflow }} · ${{ github.ref_name }}: ${{ github.event.head_commit.message || github.event.pull_request.title || github.workflow }}"
 
 on:
   schedule:
