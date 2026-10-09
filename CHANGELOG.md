@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The wake scenarios read the model's answer rather than the typed line, and wait for the agent at rest, or for its tool at work, instead of fixed pauses.
 - Built against the snapshots of Sokar (0.4.2-SNAPSHOT) and `sokar-parent` (0.1.4-SNAPSHOT, with the release tooling 0.4.5-SNAPSHOT); a release moves them to released versions first.
 - Every workflow run is titled by its workflow, the branch or tag and the commit; the shared rules run as `Shared rules check`, the weekly pin move as `Agent version update`.
 

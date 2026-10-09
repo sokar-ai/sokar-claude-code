@@ -27,10 +27,20 @@ Feature: An agent at rest is woken by a message for it
     Then the "claude" agent in task "wake" of "wake" reaches work without being asked anything
     When I type "Reply with the single word PONG."
     And I press Enter
-    Then within 120 seconds the terminal shows "PONG"
-    # An answer is on the screen a moment before its turn ends; the pause makes this the case of an agent at rest.
-    When a script runs "sleep 10"
-    And a script runs "echo 'What is 1234 plus 4321? Reply with the digits only.' | sokar talk tell sokar-wake-wake"
+    # The model's answer, not the typed line, which has the word in it too.
+    Then within 120 seconds this script exits zero:
+      """
+      podman exec sokar-wake-wake tmux capture-pane -p -t sokar | grep -v 'single word PONG' | grep -qw PONG
+      """
+    # An answer is on the screen a moment before its turn ends. At rest is what claude.yaml's at_rest reads, so
+    # the message below comes to an agent at rest, not to one still finishing its turn.
+    Then within 60 seconds this script exits zero:
+      """
+      screen=$(podman exec sokar-wake-wake tmux capture-pane -p -t sokar)
+      printf '%s\n' "$screen" | grep -qF 'bypass permissions on' || exit 1
+      ! printf '%s\n' "$screen" | grep -qE 'esc to interrupt|Esc to cancel'
+      """
+    When a script runs "echo 'What is 1234 plus 4321? Reply with the digits only.' | sokar talk tell sokar-wake-wake"
     Then it exits zero
     And within 120 seconds the terminal shows "A message for you waits"
     # The guide has a message answered with a message, so the answer counts either way the agent gives it:
@@ -65,8 +75,9 @@ Feature: An agent at rest is woken by a message for it
     Then the "claude" agent in task "busy" of "busy" reaches work without being asked anything
     When I type "Run the shell command 'sleep 10' with your shell tool, then reply with the single word DONE."
     And I press Enter
-    And a script runs "sleep 3"
-    And a script runs "echo 'What is 1234 plus 4321? Reply with the digits only.' | sokar talk tell sokar-busy-busy"
+    # Working, seen rather than assumed: its sleep runs in the task, so the message below comes while it works.
+    Then within 120 seconds a script running "podman top sokar-busy-busy args | grep -qE '(^|/)sleep 10'" exits zero
+    When a script runs "echo 'What is 1234 plus 4321? Reply with the digits only.' | sokar talk tell sokar-busy-busy"
     Then it exits zero
     And within 240 seconds the terminal shows "A message for you waits"
     # The guide has a message answered with a message, so the answer counts either way the agent gives it:
