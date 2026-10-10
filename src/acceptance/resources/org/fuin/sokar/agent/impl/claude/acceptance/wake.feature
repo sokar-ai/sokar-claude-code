@@ -27,10 +27,18 @@ Feature: An agent at rest is woken by a message for it
     Then the "claude" agent in task "wake" of "wake" reaches work without being asked anything
     When I type "Reply with the single word PONG."
     And I press Enter
-    # The model's answer, not the typed line, which has the word in it too.
+    # The model's answer, not the typed line, which has the word in it too. A notice Claude Code draws at start can
+    # take the Enter, leaving the line in its input box (the line under a rule, after the prompt sign); a person
+    # presses Enter again, and so does a try that finds it there.
     Then within 120 seconds this script exits zero:
       """
-      podman exec sokar-wake-wake tmux capture-pane -p -t sokar | grep -v 'single word PONG' | grep -qw PONG
+      screen=$(podman exec sokar-wake-wake tmux capture-pane -p -t sokar 2>&1)
+      printf '%s\n' "$screen" | grep -v 'single word PONG' | grep -qw PONG && exit 0
+      if printf '%s\n' "$screen" | grep -A1 '^──' | grep '^❯' | grep -qF 'single word PONG'; then
+        podman exec sokar-wake-wake tmux send-keys -t sokar Enter; echo 'the line still stood in the input box: Enter again'
+      fi
+      printf 'screen, last lines:\n'; printf '%s\n' "$screen" | grep -v '^ *$' | tail -12
+      exit 1
       """
     # An answer is on the screen a moment before its turn ends. At rest is what claude.yaml's at_rest reads, so
     # the message below comes to an agent at rest, not to one still finishing its turn.
@@ -76,13 +84,17 @@ Feature: An agent at rest is woken by a message for it
     When I type "Run the shell command 'sleep 10' with your shell tool, then reply with the single word DONE."
     And I press Enter
     # Working, seen rather than assumed: its sleep runs in the task, or its tool shows it running, so the message
-    # below comes while it works. A try that sees neither says what it saw.
+    # below comes while it works. A line still standing in the input box gets Enter again, as above. A try that sees
+    # neither says what it saw.
     Then within 120 seconds this script exits zero:
       """
       top=$(podman top sokar-busy-busy args 2>&1)
       screen=$(podman exec sokar-busy-busy tmux capture-pane -p -t sokar 2>&1)
       printf '%s\n' "$top" | grep -qE '(^|/)sleep 10' && exit 0
       printf '%s\n' "$screen" | grep -qF 'Bash(sleep 10)' && printf '%s\n' "$screen" | grep -qF 'Running…' && exit 0
+      if printf '%s\n' "$screen" | grep -A1 '^──' | grep '^❯' | grep -qF 'single word DONE'; then
+        podman exec sokar-busy-busy tmux send-keys -t sokar Enter; echo 'the line still stood in the input box: Enter again'
+      fi
       printf 'podman top:\n%s\nscreen, last lines:\n' "$top"; printf '%s\n' "$screen" | grep -v '^ *$' | tail -12
       exit 1
       """
