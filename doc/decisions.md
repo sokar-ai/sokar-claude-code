@@ -23,6 +23,7 @@ repository is built.
 | [A task that comes back continues its conversation](#a-task-that-comes-back-continues-its-conversation) | the session id read from Claude Code's own record, unattended or attached |
 | **The pinned CLI** | |
 | [The CLI does not update itself in a task](#the-cli-does-not-update-itself-in-a-task) | the pinned version is the one that runs |
+| [A model the CLI does not know keeps its own window](#a-model-the-cli-does-not-know-keeps-its-own-window) | the provider says when the context is full, not a window the CLI assumes |
 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) | nothing independent to verify the download against, and why that stays |
 | **The build** | |
 | [The release tooling is Sokar's, configured from the pom](#the-release-tooling-is-sokars-configured-from-the-pom) | data beside the pin, never a copy of code |
@@ -139,6 +140,26 @@ terminated.
 
 **What would change it:** nothing in the CLI's behavior. A new version comes through the weekly
 update job, which verifies it on both distributions before anything is published.
+
+
+## A model the CLI does not know keeps its own window
+
+**Measured on Claude Code 2.1.267** with `z-ai/glm-5.3-flash` over OpenRouter, in a task: at every
+start the CLI says the model *"isn't described by this version's model catalog"*, and that until it is
+mapped *"auto-compact keeps this session within 200k tokens (the context window it assumes)"*. That
+holds for every model outside the CLI's catalog, which other vendors' models over OpenRouter are.
+
+**How it is answered:** `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1` in the `env` of the
+container's `settings.json`. With it the notice is gone, the model answers, and the CLI compacts when
+the provider reports the context full, as it did before 2.1.267. By the CLI's own check it applies
+only to a model outside its catalog. Measured to work from `settings.json`.
+
+- **Not `CLAUDE_CODE_MAX_CONTEXT_TOKENS`**, which also silences the notice but needs each model's real
+  window. The adapter does not know it; the provider does.
+- **Not a `modelPicker` row with `behavesAs`**, which silences it by giving the model the prompt profile,
+  capabilities and effort defaults of a model the CLI knows. That claims for an arbitrary model what
+  nobody measured.
+- **Not `[1m]` on the model name**, which asserts a 1M window for whatever model is named.
 
 ## Reaching work is checked by what the screen shows, not by the dialogs known
 

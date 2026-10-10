@@ -67,6 +67,11 @@ final class ClaudeSettings {
         // the CLI ignores it for a native install.
         final Map<String, Object> env = new LinkedHashMap<>();
         env.put("DISABLE_UPDATES", "1");
+        // A model this version's catalog does not describe - other vendors' models over OpenRouter - would be
+        // held to the 200k tokens the CLI assumes, with a notice at every start. Its real window is the
+        // provider's to know, not the adapter's: with this the CLI compacts when the provider says the context
+        // is full, as before 2.1.267. By the CLI's own check it applies only to a model outside its catalog.
+        env.put("CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT", "1");
         root.put("env", env);
         return Json.write(root);
     }

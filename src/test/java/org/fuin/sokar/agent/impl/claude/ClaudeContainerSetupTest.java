@@ -74,6 +74,18 @@ class ClaudeContainerSetupTest {
     }
 
     @Test
+    void letsAModelTheCliDoesNotKnowUseItsOwnWindow() {
+
+        // Measured on 2.1.267 with z-ai/glm-5.3-flash over OpenRouter: the CLI says the model "isn't
+        // described by this version's model catalog" and holds the session to 200k tokens. With this
+        // set it says nothing and leaves the window to the provider, as before 2.1.267.
+        final Map<?, ?> settings = parse(named(ClaudeSettings.FILE, "oauth"));
+
+        assertThat(((Map<?, ?>) settings.get("env")).get("CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"))
+                .isEqualTo("1");
+    }
+
+    @Test
     void keepsTheSettingsReadableRatherThanSecret() {
 
         // Configuration, not a credential: nothing in it is worth hiding, and marking it
