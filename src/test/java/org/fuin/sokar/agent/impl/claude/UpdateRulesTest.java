@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
- * The update rules the operator decided, kept where Sokar's release tool reads them.
+ * The update rules, kept where Sokar's release tool reads them.
  * <p>
  * The tool applies the rule; what can break here is the property that asks for it. Without it the
  * tool takes a release the hour it appears, and nothing fails.

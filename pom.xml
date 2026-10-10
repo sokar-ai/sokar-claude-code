@@ -56,7 +56,7 @@
         <sokar.release.channel>stable</sokar.release.channel>
         <sokar.release.digest>manifest https://downloads.claude.ai/claude-code-releases/{version}/manifest.json linux-x64</sokar.release.digest>
         <sokar.release.license>npm https://registry.npmjs.org/@anthropic-ai%2fclaude-code</sokar.release.license>
-        <!-- The operator's rule: a release is taken once it is three days old. -->
+        <!-- The rule: a release is taken once it is three days old. -->
         <sokar.release.min-age>3d</sokar.release.min-age>
 
         <!-- The published contract this builds against. Nothing else of Sokar's is on the
@@ -240,7 +240,7 @@
                                 <configuration>
                                     <imageName>sokar-agent-claude</imageName>
                                     <mainClass>org.fuin.sokar.agent.impl.claude.ClaudeAgent</mainClass>
-                                    <!-- The x86-64 baseline, by the operator's decision: native-image's default is v3,
+                                    <!-- The x86-64 baseline: native-image's default is v3,
                                          and a CPU or VM without AVX2 would install the package and not start it.
                                          NativeLinkageCheck holds the binary to exactly the baseline. -->
                                     <buildArgs>
