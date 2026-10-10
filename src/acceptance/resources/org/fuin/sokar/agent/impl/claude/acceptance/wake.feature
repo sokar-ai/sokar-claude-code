@@ -75,8 +75,17 @@ Feature: An agent at rest is woken by a message for it
     Then the "claude" agent in task "busy" of "busy" reaches work without being asked anything
     When I type "Run the shell command 'sleep 10' with your shell tool, then reply with the single word DONE."
     And I press Enter
-    # Working, seen rather than assumed: its sleep runs in the task, so the message below comes while it works.
-    Then within 120 seconds a script running "podman top sokar-busy-busy args | grep -qE '(^|/)sleep 10'" exits zero
+    # Working, seen rather than assumed: its sleep runs in the task, or its tool shows it running, so the message
+    # below comes while it works. A try that sees neither says what it saw.
+    Then within 120 seconds this script exits zero:
+      """
+      top=$(podman top sokar-busy-busy args 2>&1)
+      screen=$(podman exec sokar-busy-busy tmux capture-pane -p -t sokar 2>&1)
+      printf '%s\n' "$top" | grep -qE '(^|/)sleep 10' && exit 0
+      printf '%s\n' "$screen" | grep -qF 'Bash(sleep 10)' && printf '%s\n' "$screen" | grep -qF 'Running…' && exit 0
+      printf 'podman top:\n%s\nscreen, last lines:\n' "$top"; printf '%s\n' "$screen" | grep -v '^ *$' | tail -12
+      exit 1
+      """
     When a script runs "echo 'What is 1234 plus 4321? Reply with the digits only.' | sokar talk tell sokar-busy-busy"
     Then it exits zero
     And within 240 seconds the terminal shows "A message for you waits"
