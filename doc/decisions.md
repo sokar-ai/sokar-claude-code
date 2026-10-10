@@ -27,6 +27,7 @@ repository is built.
 | [Accepted risk: the release binary and its digest share one trust root](#accepted-risk-the-release-binary-and-its-digest-share-one-trust-root) | nothing independent to verify the download against, and why that stays |
 | **The build** | |
 | [The release tooling is Sokar's, configured from the pom](#the-release-tooling-is-sokars-configured-from-the-pom) | data beside the pin, never a copy of code |
+| [A release is built from releases only](#a-release-is-built-from-releases-only) | on a tag nothing from Central's snapshots, and a tag on a Sokar snapshot refused by the step itself |
 | [Actions run from a commit, and Dependabot moves them](#actions-run-from-a-commit-and-dependabot-moves-them) | every `uses:` by commit, GraalVM by Sokar's pin, checked by `check-actions` |
 | [What an update takes, and when](#what-an-update-takes-and-when) | three days old and still the newest, verified on rented machines before the pull request |
 | [NullAway comes from `sokar-parent`](#nullaway-comes-from-sokar-parent) | one compiler configuration for every repository; `.mvn/jvm.config` stays here |
@@ -249,6 +250,26 @@ older than the pin; `check-pin` fails on a digest changed by one character.
 **What would change it:** a second agent-specific fact that is not a property of the pin - then it
 belongs in the tool as a named strategy, as the three upstream kinds are.
 
+
+## A release is built from releases only
+
+Between releases everything is built on snapshots: `sokar.version`, the parent, and with the parent the release
+tooling. A tag's build takes none of them.
+
+- **Nothing from Central's snapshots on a tag.** The snapshot repository is a profile in `settings.xml` that
+  switches itself off when `sokar.release` is set, and `build.yml` sets `MAVEN_ARGS` to `-Dsokar.release` on a tag
+  and to `-U` elsewhere. Measured: with it, a build from an empty local repository cannot resolve the snapshot
+  parent; without it, it does. Not `-P!standard`: Maven then lists the profile as inactive and still takes the
+  parent from its repository, also measured.
+- **Nothing asked for again on a tag.** `-U` is in no command; `MAVEN_ARGS` carries it where it belongs, also into
+  the `pinned-jdk` action.
+- **A tag on a snapshot is refused.** "Which channel" refuses a `sokar.version` that names a snapshot, in the build
+  job and in the release job. `ReleaseChannelTest` runs both steps as a tag's run would, sees the refusal, and sees
+  a released Sokar let through; it was seen to fail with the refusal taken out. `check-releases` then refuses any
+  snapshot left in the effective pom.
+- **Secrets only where a tool needs them.** The tooling is resolved and the channel decided in steps that hold no
+  secret. The steps that hold one run only what needs it: the acceptance legs and their clean-up the cloud's key and
+  the provider's, publishing the repository's token.
 ## Actions run from a commit, and Dependabot moves them
 
 Every `uses:` names a full commit with its release beside it, `@<commit> # vX.Y.Z`. A tag is a name its

@@ -53,16 +53,6 @@ class WorkflowRulesTest {
                 .anyMatch(step -> step.contains("secrets.OPEN_ROUTER_API_KEY") && step.contains("-n \"$KEY\""));
     }
 
-    @Test
-    void aReleaseIsBuiltAgainstAReleasedSokar() throws IOException {
-
-        // Both "Which channel" steps, the build job's and the release job's.
-        final String build = Files.readString(workflows().resolve("build.yml"));
-        assertThat(build).contains("sokar.version");
-        assertThat(build.split("is a snapshot; a release is built against a released Sokar", -1))
-                .as("refusals of a snapshot sokar.version on a tag").hasSize(3);
-    }
-
     private static Path workflows() {
         return RepositoryDocuments.root().resolve(".github/workflows");
     }

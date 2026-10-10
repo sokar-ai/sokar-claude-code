@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- A tag's build takes nothing from Central's snapshots and asks for nothing again, and a tag on a Sokar snapshot is seen refused by the channel step itself, run in a test.
 - A model Claude Code's catalog does not describe, such as another vendor's over OpenRouter, keeps the window its provider gives it: no 200k-token cap and no notice at every start.
 - The wake scenarios read the model's answer rather than the typed line, and wait for the agent at rest, or for its tool at work, instead of fixed pauses.
 - Built against the snapshots of Sokar (0.4.2-SNAPSHOT) and `sokar-parent` (0.1.4-SNAPSHOT, with the release tooling 0.4.5-SNAPSHOT); a release moves them to released versions first.
