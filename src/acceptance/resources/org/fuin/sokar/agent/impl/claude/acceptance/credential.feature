@@ -86,9 +86,16 @@ Feature: A task authenticates without ever holding the credential
     And the vault holds the value of "SOKAR_E2E_OPENROUTER_API_KEY" as "openrouter" of kind "api-key"
     And a project called "broker" of class "guarded" with a file in it
     When a task is started in "broker" for the "claude" agent through "openrouter" and left running
+    # A model over OpenRouter sometimes ends its turn with no text at all, and the CLI exits 0 with nothing on
+    # standard output (measured on 2.1.267: 1 in 6 to 1 in 3). That empty answer is asked again, twice at most and
+    # said each time; a run that fails - a refused credential, a broker that is not there - is never asked again.
     And the task's container runs:
       """
-      timeout 240 ~/.local/bin/claude --model "${SOKAR_E2E_MODEL}" -p "Reply with exactly the word SOKARLIVE and nothing else."
+      for try in 1 2 3; do
+        out=$(timeout 240 ~/.local/bin/claude --model "${SOKAR_E2E_MODEL}" -p "Reply with exactly the word SOKARLIVE and nothing else.") || { printf '%s\n' "$out"; exit 1; }
+        case "$out" in *[![:space:]]*) printf '%s\n' "$out"; exit 0 ;; esac
+        echo "try $try: an empty answer, exit 0"
+      done
       """
     Then its output contains "SOKARLIVE"
     And the task's container environment does not contain the value of "SOKAR_E2E_OPENROUTER_API_KEY"

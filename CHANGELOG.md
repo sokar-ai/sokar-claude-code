@@ -12,6 +12,7 @@ appears as an entry rather than a heading. One sentence per change - `git log` h
 
 ### Changed
 
+- The unattended broker scenario asks again when the model ends its turn with no text and the CLI exits 0, twice at most and said each time; a failing run is never asked again.
 - A tag's build takes nothing from Central's snapshots and asks for nothing again, and a tag on a Sokar snapshot is seen refused by the channel step itself, run in a test.
 - A model Claude Code's catalog does not describe, such as another vendor's over OpenRouter, keeps the window its provider gives it: no 200k-token cap and no notice at every start.
 - The wake scenarios read the model's answer rather than the typed line, and wait for the agent at rest, or for its tool at work, instead of fixed pauses.
